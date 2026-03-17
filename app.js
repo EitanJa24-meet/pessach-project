@@ -5,7 +5,6 @@
 // ---- CONFIG ----
 const HARDCODED_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyr1T1jHOTis8BTTuC0bdYw58Ed-BZQ5qBfyLJ87BOUTSofl4wx0ajv8cALtKeuvkJs/exec';
 const HARDCODED_SHEET      = 'DATABASE';
-
 const CFG_KEY = 'vdash_cfg';
 let cfg = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
 if (HARDCODED_SCRIPT_URL) { cfg.url = HARDCODED_SCRIPT_URL; cfg.sheet = HARDCODED_SHEET; }
@@ -15,56 +14,147 @@ const LIVE = !!cfg.url;
 let allRows = [], filteredRows = [], currentRow = null;
 let currentView = 'table', mapObj = null, mapMarkers = [];
 
-// Column indices (0-based)
 const C = { id:0,title:1,desc:2,address:3,area:4,name:5,phone:6,status:7,link:8,responsible:9,volNotes:10,internalNotes:11,sys1:12,sys2:13,created:14,updated:15 };
 
-// ---- STATUS ----
 const STATUS_BADGE = {
-  'צריך מתנדבים דחוף': 'badge-urgent',
-  'בטיפול':             'badge-inprogress',
-  'בבדיקה עם מתנדבים': 'badge-checking',
-  'טופל':               'badge-done',
-  'לא רלוונטי':         'badge-none',
-  '':                   'badge-none',
+  'צריך מתנדבים דחוף':'badge-urgent','בטיפול':'badge-inprogress',
+  'בבדיקה עם מתנדבים':'badge-checking','טופל':'badge-done',
+  'לא רלוונטי':'badge-none','':'badge-none'
 };
 const STATUS_COLOR = {
   'צריך מתנדבים דחוף':'#b83232','בטיפול':'#2563a8',
-  'בבדיקה עם מתנדבים':'#c4621a','טופל':'#4a7c59','לא רלוונטי':'#7a7468',''
-:'#7a7468'};
+  'בבדיקה עם מתנדבים':'#c4621a','טופל':'#4a7c59','לא רלוונטי':'#7a7468',''  :'#7a7468'
+};
 
-function badgeHTML(status) {
-  const cls = STATUS_BADGE[status] || 'badge-none';
-  return `<span class="badge ${cls}">${status || 'ללא סטטוס'}</span>`;
+function badgeHTML(s) {
+  return `<span class="badge ${STATUS_BADGE[s]||'badge-none'}">${s||'ללא סטטוס'}</span>`;
 }
 
-// ---- AREA CLASSIFIER ----
+// =============================================
+//  AREA CLASSIFIER — comprehensive Israeli cities
+// =============================================
 const AREAS = {
-  'ירושלים':['ירושלים','jerusalem','בית הכרם','מלחה','גילה','רמות','פסגת זאב','הר נוף','קטמון','בקעה','טלביה','רחביה','עין כרם'],
-  'עמק יזרעאל':['עמק יזרעאל','עפולה','מגדל העמק','נוף הגליל','כפר יהושע','מרחביה','גבע','עין חרוד'],
-  'גבעת שמואל + פתח תקווה':['גבעת שמואל','פתח תקווה','פ"ת','כפר סבא','הוד השרון'],
-  'גבעתיים ורמת גן':['גבעתיים','רמת גן','בני ברק','קריית אונו'],
-  'זכרון והסביבה':['זכרון','זכרון יעקב','בנימינה','פרדס חנה','כרכור','גבעת עדה'],
-  'ראשון לציון':['ראשון לציון','ראשל"צ','נס ציונה','גן יבנה','יבנה'],
-  'תל אביב':['תל אביב','ת"א','יפו','נווה צדק','פלורנטין'],
-  'רעננה':['רעננה','הרצליה','כפר שמריהו'],
-  'שפלה':['שפלה','לוד','רמלה','קריית גת','גדרה','רחובות'],
-  'לב השרון עמק חפר והסביבה':['עמק חפר','לב השרון','נתניה','חדרה','קיסריה','קדימה','צורן','מכמורת'],
-  'משגב והסביבה':['משגב','כרמיאל','עכו','נהריה','שלומי','מעלות','סח\'נין','טמרה'],
-  'שומרון':['שומרון','אריאל','עלי','אלפי מנשה','קרני שומרון','ברקן','עופרה','בית אל','שילה'],
-  'מודיעין':['מודיעין','מכבים','רעות','שוהם'],
-  'חיפה':['חיפה','טירת כרמל','נשר','קריית אתא','קריית ביאליק','קריית מוצקין','קריית ים'],
-  'מועצה איזורית גזר':['גזר','חשמונאים','כפר מעש','בן שמן','גינתון'],
-  'גוש עציון':['גוש עציון','אפרת','אלעזר','כפר עציון','נווה דניאל','אלון שבות','תקוע'],
-  'אשקלון':['אשקלון','שדרות','נתיבות','אופקים'],
-  'באר שבע':['באר שבע','דימונה','ירוחם','מצפה רמון','ערד','להבים','עומר'],
-  'בית שמש':['בית שמש','צרעה','זנוח'],
+  'ירושלים': [
+    'ירושלים','jerusalem','בית הכרם','מלחה','גילה','רמות','פסגת זאב','הר נוף',
+    'קטמון','בקעה','טלביה','רחביה','עין כרם','ארנונה','גוננים','קריית יובל',
+    'שעריים','מוצא','בית זית','מטה יהודה','אבו גוש','בית מאיר','בית נקופה',
+    'קריית ענבים','מעלה החמישה','עמינדב','צור הדסה','הר אדר','גבעת זאב','גבעון',
+    'נבי שמואל','ביתר עילית'
+  ],
+  'עמק יזרעאל': [
+    'עמק יזרעאל','עפולה','מגדל העמק','נוף הגליל','נצרת עילית','כפר יהושע',
+    'מרחביה','גבע','עין חרוד','יזרעאל','גדעונה','תל יוסף','עין דור','נהלל',
+    'כפר ברוך','שדה יעקב','גינגר','בית שאן','קיבוץ גן שמואל','גבעת אלונים',
+    'יפעת','גניגר','כפר גדעון','בית לחם הגלילית','דבורייה'
+  ],
+  'גבעת שמואל + פתח תקווה': [
+    'גבעת שמואל','פתח תקווה','פ"ת','כפר סבא','הוד השרון','קלנסווה',
+    'טייבה','טירה','רמת השרון','כפר מל"ל','נחלת יהודה','ראש העין',
+    'פתח-תקווה','פתח תקוה'
+  ],
+  'גבעתיים ורמת גן': [
+    'גבעתיים','רמת גן','בני ברק','קריית אונו','אור יהודה','בת ים','חולון',
+    'רמת עם','גני תקווה'
+  ],
+  'זכרון והסביבה': [
+    'זכרון','זכרון יעקב','בנימינה','פרדס חנה','כרכור','גבעת עדה','עמיקם',
+    'רמת הנדיב','עין כרמל','דור','נחשולים','גבעת נילי','אם חיפה','פרדסייה'
+  ],
+  'ראשון לציון': [
+    'ראשון לציון','ראשל"צ','ראשון','נס ציונה','גן יבנה','יבנה','באר יעקב',
+    'צריפין','ראשון לצион'
+  ],
+  'תל אביב': [
+    'תל אביב','ת"א','יפו','נווה צדק','פלורנטין','הצפון הישן','לב תל אביב',
+    'רמת אביב','הכרם','נחלת בנימין','מונטיפיורי','רמת החייל','צהלה',
+    'אפקה','גן העיר','נורדיה','גבעת שרת','רמת ישי','כרם התימנים',
+    'שכונת התקווה','עזרא','שפירא','נווה שרת','שכונת המשתלה'
+  ],
+  'רעננה': [
+    'רעננה','הרצליה','כפר שמריהו','נורדיה','כפר נטר','אבן יהודה',
+    'צור יגאל','תל מונד','עמק חרוד'
+  ],
+  'שפלה': [
+    'שפלה','לוד','רמלה','קריית גת','קריית מלאכי','גדרה','רחובות',
+    'נס ציונה','מזכרת בתיה','גן יבנה','קיבוץ גלויות','פדיה','חולדה',
+    'עקרון','ירוחם רגב','בית דגן','סגולה','מושב שפיר','מושב נחם'
+  ],
+  'לב השרון עמק חפר והסביבה': [
+    'עמק חפר','לב השרון','נתניה','חדרה','קיסריה','קדימה','צורן','מכמורת',
+    'בית יצחק','שרון','אלישמע','עין שריג','קדימה צורן','ניצני עוז',
+    'כפר חיים','מעברות','עין ורד','גבעת חיים','משמר השרון','תל יצחק',
+    'גן חיים','כפר ויתקין','גבעת שפירא','בית חנניה','עין חמד','פרדס חנה',
+    'זיכרון','אלוני יצחק','בית זייד','גן שמואל','חפר','עמק'
+  ],
+  'משגב והסביבה': [
+    'משגב','כרמיאל','עכו','נהריה','שלומי','מעלות','מעלות תרשיחא',
+    'כפר מנדא','עילבון','סח\'נין','ערב','טמרה','יוטבת','מגאר',
+    'דיר חנא','ראמה','בועינה','כאוכב','ביר אלמכסור','עצמון שגב',
+    'כמון','חורפיש','פסוטה','מגדל','כפר כנא'
+  ],
+  'שומרון': [
+    'שומרון','אריאל','עלי','אלפי מנשה','קרני שומרון','ברקן','עופרה',
+    'בית אל','שילה','מעלה לבונה','תפוח','נופים','קדומים','ימין אורד',
+    'חרמש','כוכב יעקב','אלון מורה','גבע בנימין','גבעות עולם',
+    'כפר תפוח','מעלה שומרון','רחלים','איתמר','ברכה','חווארה',
+    'יצהר','מגדל שמס','חיננית','מבוא שומרון','עמנואל','מתתיהו',
+    'נחליאל','בית חורון','גבעון החדשה','נעלה','כפר חורש'
+  ],
+  'מודיעין': [
+    'מודיעין','מכבים','רעות','שוהם','מודיעין עילית','לטרון',
+    'שלת','מחסיה','כסלון','בית מאיר','כפר רות'
+  ],
+  'חיפה': [
+    'חיפה','טירת כרמל','נשר','קריית אתא','קריית ביאליק','קריית מוצקין',
+    'קריית ים','קריית חיים','חוף הכרמל','עוספייה','דלית אל כרמל',
+    'עין הוד','בת גלים','הדר הכרמל','נווה שאנן','רמת שפרינצק',
+    'רמות רמז','הכרמל','כרמל','קריית שפרינצק','גב ים','רמת ויצמן'
+  ],
+  'מועצה איזורית גזר': [
+    'גזר','חשמונאים','כפר מעש','בן שמן','גינתון','אחיסמך','נטעים',
+    'מזור','כפר דניאל','בית עריף','בית נחמיה','שדה וורבורג','ניר צבי',
+    'כפר שילוח','אחיסמך','אחיטוב','כפר בן נון'
+  ],
+  'גוש עציון': [
+    'גוש עציון','אפרת','אלעזר','כפר עציון','נווה דניאל','אלון שבות',
+    'תקוע','בית לחם','קריית ארבע','הר גילה','רש צורים','פני הבר',
+    'מגדל עוז','שדמות','גבעת עוז','ביתר עילית','בית שמש','בית מאיר',
+    'צור הדסה','מאלה אדומים','מעלה אדומים','בית ג\'לה'
+  ],
+  'אשקלון': [
+    'אשקלון','שדרות','נתיבות','אופקים','קריית גת','מגן','ניר עם',
+    'ניר עוז','עין הבשור','תקומה','ברור חיל','רעים','בארי','כפר עזה',
+    'נחל עוז','עלומים','גבים','ישראל','אבשלום','מפלסים','משמר הנגב',
+    'גן יבנה','גבעתי','צאלים'
+  ],
+  'באר שבע': [
+    'באר שבע','דימונה','ירוחם','מצפה רמון','ערד','להבים','עומר',
+    'כרמים','מיתר','הר הנגב','תל שבע','ראהט','שגב שלום','כסייפה',
+    'ביר הדאג\'','לקיה','חורה','אבו תלול','אשחר','גבעות בר',
+    'כרמים','נבטים','שדה בוקר','מצפה רמון'
+  ],
+  'בית שמש': [
+    'בית שמש','צרעה','זנוח','עגור','נחם','הר טוב','מחסיה',
+    'אמציה','לכיש','כפר מנחם','גת','שריגים','גן הדרום'
+  ],
 };
+
+// Build reverse lookup: every keyword → area (lowercase)
+const KEYWORD_MAP = {};
+for (const [area, keywords] of Object.entries(AREAS)) {
+  for (const kw of keywords) {
+    KEYWORD_MAP[kw.toLowerCase().trim()] = area;
+  }
+}
+// Sort keywords longest-first so longer matches win
+const SORTED_KEYWORDS = Object.keys(KEYWORD_MAP).sort((a,b) => b.length - a.length);
 
 function classifyArea(address) {
   if (!address) return '';
-  const low = address.toLowerCase();
-  for (const [area, kws] of Object.entries(AREAS)) {
-    for (const kw of kws) { if (low.includes(kw.toLowerCase())) return area; }
+  const low = address.toLowerCase().trim();
+  // Try longest keyword first
+  for (const kw of SORTED_KEYWORDS) {
+    if (low.includes(kw)) return KEYWORD_MAP[kw];
   }
   return '';
 }
@@ -78,12 +168,13 @@ function normPhone(p) {
   return s;
 }
 
-// ---- FETCH helper (GET only — avoids CORS preflight) ----
+// ---- API — GET only, small payloads ----
 async function api(params) {
   const url = cfg.url + '?' + new URLSearchParams(params).toString();
   const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  return res.json();
+  const text = await res.text();
+  try { return JSON.parse(text); } catch(e) { throw new Error('Bad response: ' + text.slice(0,100)); }
 }
 
 // ---- LOAD DATA ----
@@ -93,7 +184,7 @@ async function loadData() {
     const j = await api({ action:'read', sheet: cfg.sheet||'DATABASE' });
     if (j.rows) { allRows = j.rows.slice(1); applyFilters(); updateCount(); }
     else showToast('שגיאה: ' + (j.error||''));
-  } catch(e) { showToast('שגיאת חיבור'); console.error(e); }
+  } catch(e) { showToast('שגיאת חיבור: ' + e.message); console.error(e); }
 }
 function updateCount() { document.getElementById('countLabel').textContent = `${allRows.length} בקשות`; }
 
@@ -102,7 +193,6 @@ function applyFilters() {
   const area   = document.getElementById('filterArea').value;
   const status = document.getElementById('filterStatus').value;
   const search = document.getElementById('filterSearch').value.toLowerCase().trim();
-
   filteredRows = allRows.filter(row => {
     if (area   && row[C.area]   !== area)   return false;
     if (status && row[C.status] !== status) return false;
@@ -112,12 +202,10 @@ function applyFilters() {
     }
     return true;
   });
-
   const fc = document.getElementById('filterCount');
   fc.textContent = filteredRows.length === allRows.length
     ? `${allRows.length} בקשות`
     : `${filteredRows.length} מתוך ${allRows.length}`;
-
   if (currentView==='table') renderTable();
   if (currentView==='map')   renderPins();
 }
@@ -126,48 +214,48 @@ function applyFilters() {
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   if (!filteredRows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-cell">לא נמצאו בקשות</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:60px;color:#8a8278">לא נמצאו בקשות</td></tr>';
     return;
   }
   tbody.innerHTML = filteredRows.map((row, i) => {
-    const ph    = row[C.phone] || '';
-    const np    = normPhone(ph);
-    const addr  = encodeURIComponent(row[C.address]||'');
-    const bCls  = STATUS_BADGE[row[C.status]] || 'badge-none';
-    const rowId = 'row-'+i;
-    return `<tr id="${rowId}">
+    const ph   = row[C.phone] || '';
+    const np   = normPhone(ph);
+    const addr = encodeURIComponent(row[C.address]||'');
+    const bCls = STATUS_BADGE[row[C.status]] || 'badge-none';
+    return `<tr id="row-${i}">
       <td><span class="cell-text"><strong>${esc(row[C.title])}</strong></span></td>
-      <td><span class="cell-text muted">${esc(row[C.address])}</span></td>
-      <td><span class="cell-text muted">${esc(row[C.area])}</span></td>
+      <td><span class="cell-text" style="color:#5a5248">${esc(row[C.address])}</span></td>
+      <td><span class="cell-text" style="color:#5a5248">${esc(row[C.area])}</span></td>
       <td><span class="cell-text">${esc(row[C.name])}</span></td>
-      <td><span class="cell-text muted" style="direction:ltr;text-align:right">${esc(ph)}</span></td>
+      <td><span class="cell-text" style="direction:ltr;text-align:right;color:#5a5248">${esc(ph)}</span></td>
       <td>
-        <select class="inline-select" onchange="inlineSave(${i},'status',this.value,this)" data-orig="${esc(row[C.status]||'')}">
-          <option value="" ${!row[C.status]?'selected':''}>— ללא סטטוס —</option>
-          ${['צריך מתנדבים דחוף','בטיפול','בבדיקה עם מתנדבים','טופל','לא רלוונטי'].map(s=>`<option value="${s}" ${row[C.status]===s?'selected':''}>${s}</option>`).join('')}
+        <select class="inline-select" onchange="inlineSave(${i},'status',this.value)">
+          <option value="" ${!row[C.status]?'selected':''}>— ללא —</option>
+          ${['צריך מתנדבים דחוף','בטיפול','בבדיקה עם מתנדבים','טופל','לא רלוונטי']
+            .map(s=>`<option value="${s}" ${row[C.status]===s?'selected':''}>${s}</option>`).join('')}
         </select>
       </td>
       <td>
-        <input class="inline-input" value="${esc(row[C.responsible]||'')}" placeholder="אחראי..." 
-          onblur="inlineSave(${i},'responsible',this.value,this)"
-          onkeydown="if(event.key==='Enter')this.blur()">
+        <input class="inline-input" value="${esc(row[C.responsible]||'')}" placeholder="אחראי..."
+          onblur="inlineSave(${i},'responsible',this.value)"
+          onkeydown="if(event.key==='Enter'){this.blur()}">
       </td>
       <td class="actions-cell">
-        ${ph?`<button class="tbl-btn tbl-btn-copy" title="העתק טלפון" onclick="copyText('${ph}','טלפון הועתק')">📋</button>`:''}
-        ${np?`<button class="tbl-btn tbl-btn-wa"   title="WhatsApp"    onclick="window.open('https://wa.me/${np}','_blank')">💬</button>`:''}
-        ${row[C.address]?`<button class="tbl-btn tbl-btn-nav" title="ניווט" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${addr}','_blank')">🧭</button>`:''}
-        <button class="tbl-btn tbl-btn-open" title="פתח פרטים" onclick="openModal(${i})">✎</button>
+        ${ph?`<button class="tbl-btn" onclick="copyText('${ph.replace(/'/g,"\\'")}','טלפון הועתק')" title="העתק">📋</button>`:''}
+        ${np?`<button class="tbl-btn" onclick="window.open('https://wa.me/${np}','_blank')" title="WhatsApp">💬</button>`:''}
+        ${row[C.address]?`<button class="tbl-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${addr}','_blank')" title="ניווט">🧭</button>`:''}
+        <button class="tbl-btn tbl-open" onclick="openModal(${i})" title="פתח">✎</button>
       </td>
     </tr>`;
   }).join('');
 }
 
 // ---- INLINE SAVE ----
-async function inlineSave(idx, field, value, el) {
+async function inlineSave(idx, field, value) {
   const row = filteredRows[idx];
   if (!row) return;
-  const oldVal = field==='status' ? row[C.status] : row[C.responsible];
-  if (value === oldVal) return; // no change
+  const prev = field==='status' ? row[C.status] : row[C.responsible];
+  if (String(value) === String(prev||'')) return;
 
   if (field==='status')      row[C.status]      = value;
   if (field==='responsible') row[C.responsible] = value;
@@ -176,18 +264,14 @@ async function inlineSave(idx, field, value, el) {
 
   const rowIndex = allRows.indexOf(row) + 2;
   try {
-    const params = {
-      action:'update', sheet:cfg.sheet||'DATABASE', row:rowIndex,
-      t: new Date().toLocaleString('he-IL'),
-    };
+    const params = { action:'update', sheet:cfg.sheet||'DATABASE', row:rowIndex, t:new Date().toLocaleString('he-IL') };
     if (field==='status')      params.s = value;
     if (field==='responsible') params.r = value;
     const j = await api(params);
-    if (j.success) { flashRow(idx); row[C.updated]=params.t; }
-    else { showToast('שגיאה בשמירה'); row[C.status]=oldVal; row[C.responsible]=oldVal; renderTable(); }
+    if (j.success) { flashRow(idx); }
+    else { showToast('שגיאה: '+(j.error||'')); row[C.status]=prev; row[C.responsible]=prev; renderTable(); }
   } catch(e) { showToast('שגיאת חיבור'); }
 }
-
 function flashRow(idx) {
   const el = document.getElementById('row-'+idx);
   if (el) { el.classList.remove('row-saved'); void el.offsetWidth; el.classList.add('row-saved'); }
@@ -199,48 +283,40 @@ function openModal(idx) {
   if (!row) return;
   currentRow = { row, idx };
 
-  setText('modalTitle',  row[C.title]);
-  setText('d-desc',      row[C.desc]);
-  setText('d-address',   row[C.address]);
-  setText('d-area',      row[C.area]);
-  setText('d-name',      row[C.name]);
-  setText('d-phone',     row[C.phone]);
-  setText('d-created',   row[C.created]);
-  setText('d-internal',  row[C.internalNotes]);
+  setText('modalTitle', row[C.title]);
+  setText('d-desc',    row[C.desc]);
+  setText('d-address', row[C.address]);
+  setText('d-area',    row[C.area]);
+  setText('d-name',    row[C.name]);
+  setText('d-phone',   row[C.phone]);
+  setText('d-created', row[C.created]);
+  setText('d-internal',row[C.internalNotes]);
 
-  // Link
+  const badge = document.getElementById('modalStatusBadge');
+  badge.className = 'badge '+(STATUS_BADGE[row[C.status]]||'badge-none');
+  badge.textContent = row[C.status]||'ללא סטטוס';
+
   const linkEl = document.getElementById('d-link');
   const copyLinkBtn = document.getElementById('copyLinkBtn');
   if (row[C.link]) {
-    linkEl.innerHTML = `<a href="${esc(row[C.link])}" target="_blank" style="color:var(--green)">${esc(row[C.link]).slice(0,40)}${row[C.link].length>40?'…':''}</a>`;
-    copyLinkBtn.style.display = 'inline-flex';
-    copyLinkBtn.onclick = () => copyText(row[C.link], 'קישור הועתק');
-  } else {
-    linkEl.textContent = '—';
-    copyLinkBtn.style.display = 'none';
-  }
+    linkEl.innerHTML = `<a href="${esc(row[C.link])}" target="_blank" style="color:var(--green)">${esc(row[C.link]).slice(0,45)}${row[C.link].length>45?'…':''}</a>`;
+    copyLinkBtn.style.display='inline-flex';
+    copyLinkBtn.onclick = ()=>copyText(row[C.link],'קישור הועתק');
+  } else { linkEl.textContent='—'; copyLinkBtn.style.display='none'; }
 
-  // Status badge
-  const badge = document.getElementById('modalStatusBadge');
-  badge.className = 'badge ' + (STATUS_BADGE[row[C.status]]||'badge-none');
-  badge.textContent = row[C.status] || 'ללא סטטוס';
-
-  // Contact buttons
   const np = normPhone(row[C.phone]);
   document.getElementById('d-wa').onclick   = () => np ? window.open('https://wa.me/'+np,'_blank') : showToast('אין טלפון');
   document.getElementById('d-nav').onclick  = () => row[C.address] ? window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(row[C.address]),'_blank') : showToast('אין כתובת');
   document.getElementById('d-copy').onclick = () => copyText(row[C.phone],'טלפון הועתק');
 
-  // Editable fields
-  document.getElementById('e-status').value      = row[C.status]      || '';
-  document.getElementById('e-responsible').value = row[C.responsible] || '';
-  document.getElementById('e-notes').value        = row[C.volNotes]    || '';
+  document.getElementById('e-status').value      = row[C.status]||'';
+  document.getElementById('e-responsible').value = row[C.responsible]||'';
+  document.getElementById('e-notes').value        = row[C.volNotes]||'';
   document.getElementById('saveMsg').textContent  = '';
 
   document.getElementById('modalOverlay').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
-
 function closeModal() {
   document.getElementById('modalOverlay').classList.add('hidden');
   document.body.style.overflow = '';
@@ -250,21 +326,20 @@ function closeModal() {
 async function saveChanges() {
   if (!currentRow) return;
   const { row, idx } = currentRow;
-  const btn   = document.getElementById('saveBtn');
-  const msg   = document.getElementById('saveMsg');
-  const ns    = document.getElementById('e-status').value;
-  const nr    = document.getElementById('e-responsible').value;
-  const nn    = document.getElementById('e-notes').value;
+  const btn = document.getElementById('saveBtn');
+  const msg = document.getElementById('saveMsg');
+  const ns  = document.getElementById('e-status').value;
+  const nr  = document.getElementById('e-responsible').value;
+  const nn  = document.getElementById('e-notes').value;
 
-  btn.disabled = true; btn.textContent = 'שומר...';
-  msg.textContent = ''; msg.className = 'save-msg';
+  btn.disabled=true; btn.textContent='שומר...';
+  msg.textContent=''; msg.className='save-msg';
 
   if (!LIVE) {
     row[C.status]=ns; row[C.responsible]=nr; row[C.volNotes]=nn;
     await sleep(300); renderTable();
     btn.disabled=false; btn.textContent='💾 שמור שינויים';
-    msg.textContent='✓ נשמר (הדגמה)'; msg.className='save-msg save-ok';
-    return;
+    msg.textContent='✓ נשמר (הדגמה)'; msg.className='save-msg save-ok'; return;
   }
 
   try {
@@ -273,23 +348,19 @@ async function saveChanges() {
     const j = await api({ action:'update', sheet:cfg.sheet||'DATABASE', row:rowIndex, s:ns, r:nr, n:nn, t });
     if (j.success) {
       row[C.status]=ns; row[C.responsible]=nr; row[C.volNotes]=nn; row[C.updated]=t;
-      // Update badge
-      const badge = document.getElementById('modalStatusBadge');
-      badge.className='badge '+(STATUS_BADGE[ns]||'badge-none');
-      badge.textContent=ns||'ללא סטטוס';
+      document.getElementById('modalStatusBadge').className='badge '+(STATUS_BADGE[ns]||'badge-none');
+      document.getElementById('modalStatusBadge').textContent=ns||'ללא סטטוס';
       renderTable(); flashRow(idx);
       msg.textContent='✓ נשמר בהצלחה'; msg.className='save-msg save-ok';
     } else throw new Error(j.error||'שגיאה');
-  } catch(e) {
-    msg.textContent='✗ '+e.message; msg.className='save-msg save-err';
-  }
+  } catch(e) { msg.textContent='✗ '+e.message; msg.className='save-msg save-err'; }
   btn.disabled=false; btn.textContent='💾 שמור שינויים';
 }
 
 // ---- IMPORT ----
 function openImport() {
   document.getElementById('importOverlay').classList.remove('hidden');
-  document.getElementById('importMsg').textContent = '';
+  document.getElementById('importMsg').innerHTML = '';
   document.getElementById('importPreview').innerHTML = '';
   document.getElementById('doImportBtn').style.display = 'none';
   document.getElementById('fileDropLabel').textContent = 'לחץ או גרור קובץ Excel לכאן';
@@ -302,70 +373,33 @@ function closeImport() {
   document.body.style.overflow = '';
 }
 
-// Wire up file input and drag-drop
-document.addEventListener('DOMContentLoaded', () => {
-  const drop  = document.getElementById('fileDrop');
-  const input = document.getElementById('importFile');
-
-  drop.addEventListener('click', () => input.click());
-  input.addEventListener('change', () => { if(input.files[0]) processFile(input.files[0]); });
-
-  drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('drag-over'); });
-  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
-  drop.addEventListener('drop', e => {
-    e.preventDefault(); drop.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
-  });
-
-  // Close buttons
-  document.getElementById('modalCloseBtn').addEventListener('click',  closeModal);
-  document.getElementById('importCloseBtn').addEventListener('click', closeImport);
-  document.getElementById('configCloseBtn').addEventListener('click', closeConfig);
-
-  // Import button in topbar
-  document.getElementById('importBtn').addEventListener('click', openImport);
-
-  // Overlay click to close
-  document.getElementById('modalOverlay').addEventListener('click',  e => { if(e.target===e.currentTarget) closeModal(); });
-  document.getElementById('importOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeImport(); });
-  document.getElementById('configOverlay').addEventListener('click', e => { if(e.target===e.currentTarget) closeConfig(); });
-
-  // ESC
-  document.addEventListener('keydown', e => {
-    if (e.key==='Escape') { closeModal(); closeImport(); closeConfig(); document.body.style.overflow=''; }
-  });
-
-  loadData();
-  setInterval(loadData, 60000);
-  if (!LIVE) showToast('מצב הדגמה — לחץ ⚙️ לחיבור');
-});
-
 function processFile(file) {
-  document.getElementById('fileDropLabel').textContent = '⏳ קורא קובץ...';
-  document.getElementById('importMsg').textContent = '';
+  if (!file) return;
+  document.getElementById('fileDropLabel').textContent = '⏳ קורא...';
+  document.getElementById('importMsg').innerHTML = '';
   document.getElementById('importPreview').innerHTML = '';
   document.getElementById('doImportBtn').style.display = 'none';
 
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const wb   = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
-      const ws   = wb.Sheets[wb.SheetNames[0]];
-      const raw  = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-      if (raw.length < 2) { showImportMsg('הקובץ ריק',''); return; }
+      if (typeof XLSX === 'undefined') { showToast('SheetJS לא נטען, רענן את הדף'); return; }
+      const wb  = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+      if (raw.length < 2) { document.getElementById('importMsg').textContent='הקובץ ריק'; return; }
       parseAndPreview(raw);
     } catch(err) {
-      showImportMsg('שגיאה בקריאת הקובץ: '+err.message, 'err');
+      document.getElementById('importMsg').innerHTML = `<span style="color:#b83232">שגיאה בקריאה: ${err.message}</span>`;
     }
   };
   reader.readAsArrayBuffer(file);
 }
 
 function parseAndPreview(raw) {
-  const headers = raw[0].map(h => String(h).trim());
-  const dataRows = raw.slice(1).filter(r => r.some(c => c !== ''));
+  const headers = raw[0].map(h => String(h||'').trim());
+  const dataRows = raw.slice(1).filter(r => r.some(c => String(c).trim() !== ''));
 
-  // Find columns by Hebrew header name (flexible)
   function col(...names) {
     for (const n of names) {
       const i = headers.findIndex(h => h.includes(n));
@@ -384,76 +418,70 @@ function parseAndPreview(raw) {
   };
 
   const mapped = dataRows.map(r => {
-    const contactRaw = CI.contact>=0 ? String(r[CI.contact]||'') : '';
+    const contactRaw = CI.contact >= 0 ? String(r[CI.contact]||'') : '';
     const parts = contactRaw.split(',').map(s=>s.trim());
-    let phone = parts[1]||'';
-    phone = phone.replace(/[\s\-]/g,'');
-    if (phone.startsWith('+972')) phone = '0'+phone.slice(4);
-    const address = CI.loc>=0 ? String(r[CI.loc]||'') : '';
+    let phone = (parts[1]||'').replace(/[\s\-\+]/g,'');
+    if (phone.startsWith('972')) phone = '0'+phone.slice(3);
+    const address = CI.loc >= 0 ? String(r[CI.loc]||'') : '';
     return {
-      id:          'IMP-'+Date.now()+'-'+Math.random().toString(36).slice(2,5).toUpperCase(),
-      title:       CI.title>=0   ? String(r[CI.title]||'')   : '',
-      desc:        CI.desc>=0    ? String(r[CI.desc]||'')    : '',
+      id:    'IMP-'+Date.now()+'-'+Math.random().toString(36).slice(2,5).toUpperCase(),
+      title: CI.title>=0 ? String(r[CI.title]||'') : '',
+      desc:  CI.desc>=0  ? String(r[CI.desc]||'')  : '',
       address,
-      area:        classifyArea(address),
+      area:  classifyArea(address),
       contactName: parts[0]||'',
       phone,
-      status:      '',
-      link:        CI.link>=0    ? String(r[CI.link]||'')    : '',
-      responsible: '',
-      volNotes:    CI.notes>=0   ? String(r[CI.notes]||'')   : '',
+      status:'', link: CI.link>=0 ? String(r[CI.link]||'') : '',
+      responsible:'', volNotes: CI.notes>=0 ? String(r[CI.notes]||'') : '',
       internalNotes:'', sys1:'', sys2:'',
-      created:     new Date().toLocaleDateString('he-IL'),
-      updated:     '',
+      created: new Date().toLocaleDateString('he-IL'), updated:'',
     };
   });
 
   // Dedup
   const existLinks = new Set(allRows.map(r=>r[C.link]).filter(Boolean));
   const existKeys  = new Set(allRows.map(r=>(String(r[C.title])+'|'+String(r[C.address])).toLowerCase().trim()));
-
   const newRows = mapped.filter(r => {
     if (r.link && existLinks.has(r.link)) return false;
-    const k = (r.title+'|'+r.address).toLowerCase().trim();
-    if (k && existKeys.has(k)) return false;
-    return !!r.title; // skip blank rows
+    if (existKeys.has((r.title+'|'+r.address).toLowerCase().trim())) return false;
+    return !!r.title;
   });
 
   window._importRows = newRows;
-  const dup = mapped.length - newRows.length;
+  const dup    = mapped.length - newRows.length;
   const noArea = newRows.filter(r=>!r.area).length;
 
-  document.getElementById('fileDropLabel').textContent = `✓ ${mapped.length} שורות נקראו`;
+  document.getElementById('fileDropLabel').textContent = `✓ ${mapped.length} שורות`;
   document.getElementById('importMsg').innerHTML =
-    `<span style="color:var(--green)">✓ ${mapped.length} שורות בקובץ</span> &nbsp;·&nbsp; `+
-    `<span style="color:var(--green)"><strong>${newRows.length} חדשות</strong></span> &nbsp;·&nbsp; `+
-    `<span style="color:var(--text3)">${dup} כפולות (ידולגו)</span>`+
-    (noArea?` &nbsp;·&nbsp; <span style="color:var(--orange)">${noArea} ללא אזור</span>`:'');
+    `<span style="color:#4a7c59">✓ ${mapped.length} שורות בקובץ</span> &nbsp;·&nbsp; `+
+    `<strong style="color:#4a7c59">${newRows.length} חדשות לייבוא</strong> &nbsp;·&nbsp; `+
+    `<span style="color:#8a8278">${dup} כפולות</span>`+
+    (noArea ? ` &nbsp;·&nbsp; <span style="color:#c4621a">${noArea} ללא אזור</span>` : '');
 
-  if (newRows.length === 0) {
-    document.getElementById('importPreview').innerHTML = '<p style="text-align:center;padding:20px;color:var(--green)">✓ אין בקשות חדשות — הכל כבר קיים!</p>';
+  if (!newRows.length) {
+    document.getElementById('importPreview').innerHTML = '<p style="text-align:center;padding:20px;color:#4a7c59">✓ אין בקשות חדשות</p>';
     return;
   }
 
-  const preview = newRows.slice(0,8);
   document.getElementById('importPreview').innerHTML =
     `<table class="requests-table" style="font-size:12px">
       <thead><tr><th>כותרת</th><th>כתובת</th><th>אזור</th><th>שם</th><th>טלפון</th></tr></thead>
-      <tbody>${preview.map(r=>`<tr>
+      <tbody>${newRows.slice(0,10).map(r=>`<tr>
         <td><span class="cell-text">${esc(r.title)}</span></td>
-        <td><span class="cell-text muted">${esc(r.address)}</span></td>
-        <td><span class="cell-text">${r.area?`<span style="color:var(--green)">${esc(r.area)}</span>`:'<span style="color:var(--orange)">לא סווג</span>'}</span></td>
+        <td><span class="cell-text">${esc(r.address)}</span></td>
+        <td><span class="cell-text">${r.area?`<span style="color:#4a7c59">${esc(r.area)}</span>`:`<span style="color:#c4621a">לא סווג</span>`}</span></td>
         <td><span class="cell-text">${esc(r.contactName)}</span></td>
-        <td><span class="cell-text muted" style="direction:ltr">${esc(r.phone)}</span></td>
+        <td><span class="cell-text" style="direction:ltr">${esc(r.phone)}</span></td>
       </tr>`).join('')}</tbody>
     </table>`+
-    (newRows.length>8?`<p style="font-size:12px;color:var(--text3);padding:8px 12px">...ועוד ${newRows.length-8} שורות</p>`:'');
+    (newRows.length>10?`<p style="font-size:12px;color:#8a8278;padding:8px 12px">...ועוד ${newRows.length-10}</p>`:'');
 
   const btn = document.getElementById('doImportBtn');
   btn.style.display = 'block';
-  btn.textContent = `📥 ייבא ${newRows.length} בקשות חדשות`;
+  btn.textContent   = `📥 ייבא ${newRows.length} בקשות חדשות`;
 }
 
+// ---- DO IMPORT — sends ONE row at a time to avoid URL length limit ----
 async function doImport() {
   const rows = window._importRows;
   if (!rows||!rows.length) return;
@@ -463,24 +491,29 @@ async function doImport() {
   if (!LIVE) {
     rows.forEach(r => allRows.push([r.id,r.title,r.desc,r.address,r.area,r.contactName,r.phone,r.status,r.link,r.responsible,r.volNotes,r.internalNotes,r.sys1,r.sys2,r.created,r.updated]));
     applyFilters(); updateCount();
-    document.getElementById('importMsg').innerHTML = `<span style="color:var(--green)">✓ יובאו ${rows.length} בקשות (הדגמה)</span>`;
+    document.getElementById('importMsg').innerHTML = `<span style="color:#4a7c59">✓ יובאו ${rows.length} בקשות (הדגמה)</span>`;
     btn.style.display='none'; return;
   }
 
+  // Send in batches of 5 rows (keeps URL under limit)
+  const BATCH = 5;
+  let done = 0;
   try {
-    let done = 0;
-    for (let i=0; i<rows.length; i+=50) {
+    for (let i = 0; i < rows.length; i += BATCH) {
       btn.textContent = `מייבא... ${done}/${rows.length}`;
-      const batch = rows.slice(i,i+50).map(r=>[r.id,r.title,r.desc,r.address,r.area,r.contactName,r.phone,r.status,r.link,r.responsible,r.volNotes,r.internalNotes,r.sys1,r.sys2,r.created,r.updated]);
+      const batch = rows.slice(i, i+BATCH).map(r =>
+        [r.id,r.title,r.desc,r.address,r.area,r.contactName,r.phone,r.status,
+         r.link,r.responsible,r.volNotes,r.internalNotes,r.sys1,r.sys2,r.created,r.updated]
+      );
       const j = await api({ action:'import', sheet:cfg.sheet||'DATABASE', rows:JSON.stringify(batch) });
       if (!j.success) throw new Error(j.error||'שגיאה');
       done += batch.length;
     }
-    document.getElementById('importMsg').innerHTML = `<span style="color:var(--green)">✓ יובאו ${done} בקשות בהצלחה!</span>`;
-    btn.style.display='none';
+    document.getElementById('importMsg').innerHTML = `<span style="color:#4a7c59">✓ יובאו ${done} בקשות בהצלחה!</span>`;
+    btn.style.display = 'none';
     loadData();
   } catch(e) {
-    document.getElementById('importMsg').innerHTML = `<span style="color:var(--red)">✗ ${e.message}</span>`;
+    document.getElementById('importMsg').innerHTML = `<span style="color:#b83232">✗ ${e.message}</span>`;
     btn.disabled=false; btn.textContent='נסה שוב';
   }
 }
@@ -494,66 +527,48 @@ function setView(v) {
   document.getElementById('btnMap').classList.toggle('active',   v==='map');
   if (v==='map') initMap();
 }
-
 function initMap() {
-  if (!document.getElementById('map')) return;
   const go = () => {
-    if (!mapObj) {
-      mapObj = L.map('map', {center:[31.8,35.0],zoom:8});
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObj);
-    }
+    if (!mapObj) { mapObj=L.map('map',{center:[31.8,35.0],zoom:8}); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObj); }
     renderPins();
   };
   if (typeof L!=='undefined') { go(); return; }
-  const css=document.createElement('link'); css.rel='stylesheet'; css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
-  const s=document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; s.onload=go; document.head.appendChild(s);
+  const css=document.createElement('link');css.rel='stylesheet';css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(css);
+  const s=document.createElement('script');s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';s.onload=go;document.head.appendChild(s);
 }
-
 async function renderPins() {
   if (!mapObj) return;
   mapMarkers.forEach(m=>m.remove()); mapMarkers=[];
   for (const row of filteredRows) {
     if (!row[C.address]) continue;
     try {
-      const g = await geocode(row[C.address]);
-      if (!g) continue;
-      const color = STATUS_COLOR[row[C.status]]||'#7a7468';
-      const icon  = L.divIcon({className:'',html:`<div style="width:13px;height:13px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,.3)"></div>`,iconSize:[13,13],iconAnchor:[6,6]});
-      const m = L.marker([g.lat,g.lon],{icon}).addTo(mapObj);
-      const ri = filteredRows.indexOf(row);
-      m.on('click',()=>openModal(ri));
-      mapMarkers.push(m);
+      const g=await geocode(row[C.address]); if(!g)continue;
+      const color=STATUS_COLOR[row[C.status]]||'#7a7468';
+      const icon=L.divIcon({className:'',html:`<div style="width:13px;height:13px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,.3)"></div>`,iconSize:[13,13],iconAnchor:[6,6]});
+      const m=L.marker([g.lat,g.lon],{icon}).addTo(mapObj);
+      const ri=filteredRows.indexOf(row); m.on('click',()=>openModal(ri)); mapMarkers.push(m);
     } catch(e){}
   }
 }
 const gcCache={};
 async function geocode(address) {
   if (gcCache[address]) return gcCache[address];
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address+', Israel')}&format=json&limit=1`);
-  const d = await r.json();
-  if (d&&d[0]) { gcCache[address]={lat:+d[0].lat,lon:+d[0].lon}; return gcCache[address]; }
-  return null;
+  const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address+', Israel')}&format=json&limit=1`);
+  const d=await r.json(); if(d&&d[0]){gcCache[address]={lat:+d[0].lat,lon:+d[0].lon};return gcCache[address];} return null;
 }
 
 // ---- CONFIG ----
-function openConfig() {
-  document.getElementById('cfg-url').value   = cfg.url||'';
-  document.getElementById('cfg-sheet').value = cfg.sheet||'DATABASE';
-  document.getElementById('configOverlay').classList.remove('hidden');
-}
+function openConfig() { document.getElementById('cfg-url').value=cfg.url||''; document.getElementById('cfg-sheet').value=cfg.sheet||'DATABASE'; document.getElementById('configOverlay').classList.remove('hidden'); }
 function closeConfig() { document.getElementById('configOverlay').classList.add('hidden'); }
 function saveConfig() {
-  cfg.url   = document.getElementById('cfg-url').value.trim();
-  cfg.sheet = document.getElementById('cfg-sheet').value.trim()||'DATABASE';
-  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
-  closeConfig();
-  showToast('נשמר, מרענן...'); setTimeout(()=>location.reload(),600);
+  cfg.url=document.getElementById('cfg-url').value.trim(); cfg.sheet=document.getElementById('cfg-sheet').value.trim()||'DATABASE';
+  localStorage.setItem(CFG_KEY,JSON.stringify(cfg)); closeConfig(); showToast('נשמר, מרענן...'); setTimeout(()=>location.reload(),600);
 }
 
 // ---- UTILS ----
 function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v||'—';}
-function copyText(text,msg){if(!text){showToast('אין מה להעתיק');return;}navigator.clipboard.writeText(text).then(()=>showToast(msg||'הועתק'));}
+function copyText(text,msg){if(!text){showToast('אין מה להעתיק');return;}navigator.clipboard.writeText(String(text)).then(()=>showToast(msg||'הועתק'));}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
 
@@ -562,6 +577,40 @@ function demoData(){return[
   [1,'עזרה בקניות','קשישה לבד','הרצל 14, רעננה','רעננה','רחל כהן','052-1234567','צריך מתנדבים דחוף','https://example.com/1','','','','','','12/03/2024',''],
   [2,'תיקון ברז','ברז דולף','אלנבי 8, תל אביב','תל אביב','משה לוי','053-7654321','בטיפול','https://example.com/2','דניאל כהן','בדרך','','','','11/03/2024','12/03/2024'],
   [3,'הסעה לרופא','הסעה לקופ"ח','הנשיא 22, חיפה','חיפה','שרה גולד','054-1111222','בבדיקה עם מתנדבים','','','','','','','10/03/2024',''],
-  [4,'תרופות דחופות','חולה, צריך תרופות','בן גוריון 5, ירושלים','ירושלים','יוסף אביב','050-9876543','צריך מתנדבים דחוף','','','','','','','13/03/2024',''],
-  [5,'עזרה עם ילדים','אמא חד הורית','שד הציונות 40, גבעתיים','גבעתיים ורמת גן','מיכל בר','052-3334455','טופל','https://example.com/5','נועה כץ','טופל','','','','09/03/2024','11/03/2024'],
+  [4,'תרופות דחופות','חולה','בן גוריון 5, ירושלים','ירושלים','יוסף אביב','050-9876543','צריך מתנדבים דחוף','','','','','','','13/03/2024',''],
+  [5,'ניקיון בית','עזרה בניקיון','הדקל 15, נופים','שומרון','מיכל בר','052-3334455','','','','','','','','09/03/2024',''],
 ];}
+
+// ---- INIT ----
+document.addEventListener('DOMContentLoaded', () => {
+  // Import button
+  document.getElementById('importBtn').addEventListener('click', openImport);
+
+  // File drop zone
+  const drop  = document.getElementById('fileDrop');
+  const input = document.getElementById('importFile');
+  drop.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => { if(input.files[0]) processFile(input.files[0]); });
+  drop.addEventListener('dragover',  e=>{e.preventDefault();drop.classList.add('drag-over');});
+  drop.addEventListener('dragleave', ()=>drop.classList.remove('drag-over'));
+  drop.addEventListener('drop', e=>{e.preventDefault();drop.classList.remove('drag-over');if(e.dataTransfer.files[0])processFile(e.dataTransfer.files[0]);});
+
+  // Close buttons
+  document.getElementById('modalCloseBtn').addEventListener('click',  closeModal);
+  document.getElementById('importCloseBtn').addEventListener('click', closeImport);
+  document.getElementById('configCloseBtn').addEventListener('click', closeConfig);
+
+  // Overlay background click
+  document.getElementById('modalOverlay').addEventListener('click',  e=>{if(e.target===e.currentTarget)closeModal();});
+  document.getElementById('importOverlay').addEventListener('click', e=>{if(e.target===e.currentTarget)closeImport();});
+  document.getElementById('configOverlay').addEventListener('click', e=>{if(e.target===e.currentTarget)closeConfig();});
+
+  // ESC
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){closeModal();closeImport();closeConfig();document.body.style.overflow='';}
+  });
+
+  loadData();
+  setInterval(loadData, 60000);
+  if (!LIVE) showToast('מצב הדגמה — לחץ ⚙️ לחיבור');
+});
