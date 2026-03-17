@@ -33,6 +33,7 @@ function handle(e, p) {
       if (p.s !== undefined) sheet.getRange(row, 8).setValue(p.s);
       if (p.r !== undefined) sheet.getRange(row, 10).setValue(p.r);
       if (p.n !== undefined) sheet.getRange(row, 11).setValue(p.n);
+      if (p.i !== undefined) sheet.getRange(row, 12).setValue(p.i);
       sheet.getRange(row, 16).setValue(p.t || new Date().toLocaleString('he-IL'));
       return out({ success: true });
     }

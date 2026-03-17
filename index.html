@@ -1,223 +1,246 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מרכז פיקוד מתנדבים</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<!-- SheetJS loaded upfront so import always works -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>מרכז פיקוד מתנדבים</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- SheetJS loaded upfront so import always works -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
+
 <body>
 
-<header class="topbar">
-  <div class="topbar-inner">
-    <div class="topbar-brand">
-      <span class="brand-dot"></span>
-      <span class="brand-title">מרכז פיקוד מתנדבים</span>
-    </div>
-    <div class="topbar-center">
-      <span class="pulse-dot"></span>
-      <span id="countLabel">טוען...</span>
-    </div>
-    <div class="topbar-actions">
-      <button class="view-btn active" id="btnTable" onclick="setView('table')">רשימה</button>
-      <button class="view-btn" id="btnMap" onclick="setView('map')">מפה</button>
-      <button class="import-btn" id="importBtn">📥 ייבוא Excel</button>
-      <button class="refresh-btn" onclick="loadData()" title="רענן">↻</button>
-    </div>
-  </div>
-</header>
-
-<div class="filters-bar">
-  <div class="filters-inner">
-    <div class="filter-group">
-      <label>אזור</label>
-      <select id="filterArea" onchange="applyFilters()">
-        <option value="">כל האזורים</option>
-        <option>ירושלים</option><option>עמק יזרעאל</option>
-        <option>גבעת שמואל + פתח תקווה</option><option>גבעתיים ורמת גן</option>
-        <option>זכרון והסביבה</option><option>ראשון לציון</option>
-        <option>תל אביב</option><option>רעננה</option><option>שפלה</option>
-        <option>לב השרון עמק חפר והסביבה</option><option>משגב והסביבה</option>
-        <option>שומרון</option><option>מודיעין</option><option>חיפה</option>
-        <option>מועצה איזורית גזר</option><option>גוש עציון</option>
-        <option>אשקלון</option><option>באר שבע</option><option>בית שמש</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>סטטוס</label>
-      <select id="filterStatus" onchange="applyFilters()">
-        <option value="">כל הסטטוסים</option>
-        <option>צריך מתנדבים דחוף</option><option>בטיפול</option>
-        <option>בבדיקה עם מתנדבים</option><option>טופל</option><option>לא רלוונטי</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <input type="text" id="filterSearch" placeholder="🔍 חיפוש..." oninput="applyFilters()">
-    </div>
-    <div class="filter-count" id="filterCount"></div>
-  </div>
-</div>
-
-<!-- TABLE VIEW -->
-<div id="tableView" class="view-container">
-  <div class="table-wrapper">
-    <table class="requests-table">
-      <thead>
-        <tr>
-          <th>כותרת</th>
-          <th>כתובת</th>
-          <th>אזור</th>
-          <th>שם מבקש</th>
-          <th>טלפון</th>
-          <th>סטטוס</th>
-          <th>אחראי</th>
-          <th style="width:90px">פעולות</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody">
-        <tr><td colspan="8" class="loading-cell"><div class="loader"></div> טוען...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- MAP VIEW -->
-<div id="mapView" class="view-container hidden">
-  <div id="map"></div>
-</div>
-
-<!-- DETAIL MODAL -->
-<div id="modalOverlay" class="overlay hidden">
-  <div class="modal detail-modal">
-    <div class="modal-header">
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <h2 id="modalTitle"></h2>
-        <span id="modalStatusBadge" class="badge"></span>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-brand">
+        <span class="brand-dot"></span>
+        <span class="brand-title">מרכז פיקוד מתנדבים</span>
       </div>
-      <button class="close-btn" id="modalCloseBtn">✕</button>
+      <div class="topbar-center">
+        <span class="pulse-dot"></span>
+        <span id="countLabel">טוען...</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="view-btn active" id="btnTable" onclick="setView('table')">רשימה</button>
+        <button class="view-btn" id="btnMap" onclick="setView('map')">מפה</button>
+        <button class="import-btn" id="importBtn">📥 ייבוא Excel</button>
+        <button class="refresh-btn" onclick="loadData()" title="רענן">↻</button>
+      </div>
     </div>
-    <div class="modal-body">
-      <div class="modal-grid">
+  </header>
 
-        <!-- LEFT: read-only info -->
-        <div class="modal-left">
-          <div class="info-block">
-            <div class="info-row"><span class="info-label">תיאור</span><span id="d-desc"></span></div>
-            <div class="info-row"><span class="info-label">כתובת</span><span id="d-address"></span></div>
-            <div class="info-row"><span class="info-label">אזור</span><span id="d-area"></span></div>
-            <div class="info-row">
-              <span class="info-label">קישור</span>
-              <span id="d-link"></span>
-              <button class="copy-link-btn" id="copyLinkBtn" title="העתק קישור">📋</button>
+  <div class="filters-bar">
+    <div class="filters-inner">
+      <div class="filter-group">
+        <label>אזור</label>
+        <select id="filterArea" onchange="applyFilters()">
+          <option value="">כל האזורים</option>
+          <option>ירושלים</option>
+          <option>עמק יזרעאל</option>
+          <option>גבעת שמואל + פתח תקווה</option>
+          <option>גבעתיים ורמת גן</option>
+          <option>זכרון והסביבה</option>
+          <option>ראשון לציון</option>
+          <option>תל אביב</option>
+          <option>רעננה</option>
+          <option>שפלה</option>
+          <option>לב השרון עמק חפר והסביבה</option>
+          <option>משגב והסביבה</option>
+          <option>שומרון</option>
+          <option>מודיעין</option>
+          <option>חיפה</option>
+          <option>מועצה איזורית גזר</option>
+          <option>גוש עציון</option>
+          <option>אשקלון</option>
+          <option>באר שבע</option>
+          <option>בית שמש</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>סטטוס</label>
+        <select id="filterStatus" onchange="applyFilters()">
+          <option value="">כל הסטטוסים</option>
+          <option>צריך מתנדבים דחוף</option>
+          <option>בטיפול</option>
+          <option>בבדיקה עם מתנדבים</option>
+          <option>טופל</option>
+          <option>לא רלוונטי</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <input type="text" id="filterSearch" placeholder="🔍 חיפוש..." oninput="applyFilters()">
+      </div>
+      <div class="filter-count" id="filterCount"></div>
+    </div>
+  </div>
+
+  <!-- TABLE VIEW -->
+  <div id="tableView" class="view-container">
+    <div class="table-wrapper">
+      <table class="requests-table">
+        <thead>
+          <tr>
+            <th>כותרת</th>
+            <th>תיאור</th>
+            <th>כתובת</th>
+            <th>אזור</th>
+            <th>שם מבקש</th>
+            <th>טלפון</th>
+            <th class="col-status">סטטוס</th>
+            <th class="col-responsible">אחראי</th>
+            <th style="width:90px">פעולות</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="9" class="loading-cell">
+              <div class="loader"></div> טוען...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MAP VIEW -->
+  <div id="mapView" class="view-container hidden">
+    <div id="map"></div>
+  </div>
+
+  <!-- DETAIL MODAL -->
+  <div id="modalOverlay" class="overlay hidden">
+    <div class="modal detail-modal">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <h2 id="modalTitle"></h2>
+          <span id="modalStatusBadge" class="badge"></span>
+        </div>
+        <button class="close-btn" id="modalCloseBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+
+          <!-- LEFT: read-only info -->
+          <div class="modal-left">
+            <div class="info-block">
+              <div class="info-row"><span class="info-label">תיאור</span><span id="d-desc"></span></div>
+              <div class="info-row"><span class="info-label">כתובת</span><span id="d-address"></span></div>
+              <div class="info-row"><span class="info-label">אזור</span><span id="d-area"></span></div>
+              <div class="info-row">
+                <span class="info-label">קישור</span>
+                <span id="d-link"></span>
+                <button class="copy-link-btn" id="copyLinkBtn" title="העתק קישור">📋</button>
+              </div>
+              <div class="info-row"><span class="info-label">נוצר</span><span id="d-created"></span></div>
             </div>
-            <div class="info-row"><span class="info-label">נוצר</span><span id="d-created"></span></div>
+
+            <div class="info-block">
+              <div class="info-row"><span class="info-label">שם</span><span id="d-name"></span></div>
+              <div class="info-row"><span class="info-label">טלפון</span><span id="d-phone"></span></div>
+              <div class="contact-actions">
+                <button class="cbtn cbtn-wa" id="d-wa">💬 WhatsApp</button>
+                <button class="cbtn cbtn-nav" id="d-nav">🧭 ניווט</button>
+                <button class="cbtn cbtn-copy" id="d-copy">📋 טלפון</button>
+              </div>
+            </div>
+
+            <div class="info-block" id="volNotesBlock">
+              <div class="info-label-big">הערות מתנדבים</div>
+              <p id="d-vol-notes" class="note-text"></p>
+            </div>
           </div>
 
-          <div class="info-block">
-            <div class="info-row"><span class="info-label">שם</span><span id="d-name"></span></div>
-            <div class="info-row"><span class="info-label">טלפון</span><span id="d-phone"></span></div>
-            <div class="contact-actions">
-              <button class="cbtn cbtn-wa" id="d-wa">💬 WhatsApp</button>
-              <button class="cbtn cbtn-nav" id="d-nav">🧭 ניווט</button>
-              <button class="cbtn cbtn-copy" id="d-copy">📋 טלפון</button>
-            </div>
-          </div>
+          <!-- RIGHT: editable -->
+          <div class="modal-right">
+            <div class="edit-card">
+              <div class="edit-card-title">✏️ עריכה</div>
 
-          <div class="info-block" id="internalNotesBlock">
-            <div class="info-label-big">הערות פנימיות</div>
-            <p id="d-internal" class="note-text"></p>
+              <div class="field">
+                <label>סטטוס</label>
+                <select id="e-status" class="e-select">
+                  <option value="">— ללא סטטוס —</option>
+                  <option>צריך מתנדבים דחוף</option>
+                  <option>בטיפול</option>
+                  <option>בבדיקה עם מתנדבים</option>
+                  <option>טופל</option>
+                  <option>לא רלוונטי</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label>אחראי משימה (רשום את שמך כאן)</label>
+                <input type="text" id="e-responsible" class="e-input" placeholder="שם המתנדב שמטפל...">
+              </div>
+
+              <div class="field">
+                <label>הערות פנימיות</label>
+                <textarea id="e-internal" class="e-textarea" rows="5" placeholder="הוסף הערות..."></textarea>
+              </div>
+
+              <button class="save-btn" id="saveBtn" onclick="saveChanges()">💾 שמור שינויים</button>
+              <div id="saveMsg" class="save-msg"></div>
+            </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
 
-        <!-- RIGHT: editable -->
-        <div class="modal-right">
-          <div class="edit-card">
-            <div class="edit-card-title">✏️ עריכה</div>
+  <!-- IMPORT MODAL -->
+  <div id="importOverlay" class="overlay hidden">
+    <div class="modal import-modal">
+      <div class="modal-header">
+        <h2>📥 ייבוא מ-Excel</h2>
+        <button class="close-btn" id="importCloseBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="import-hint">העלה קובץ Excel. הכותרות הבאות יזוהו אוטומטית:<br>
+          <strong>כותרת, תיאור, מיקום, הערות, פרטי איש קשר, קישור למשימה למתנדב</strong>
+        </p>
+        <p class="import-hint-sub">כפולות ידולגו אוטומטית. כתובות יסווגו לאחד מ-19 האזורים.</p>
 
-            <div class="field">
-              <label>סטטוס</label>
-              <select id="e-status" class="e-select">
-                <option value="">— ללא סטטוס —</option>
-                <option>צריך מתנדבים דחוף</option>
-                <option>בטיפול</option>
-                <option>בבדיקה עם מתנדבים</option>
-                <option>טופל</option>
-                <option>לא רלוונטי</option>
-              </select>
-            </div>
+        <label class="file-drop" id="fileDrop">
+          <span id="fileDropLabel">לחץ או גרור קובץ Excel לכאן</span>
+          <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none">
+        </label>
 
-            <div class="field">
-              <label>אחראי משימה</label>
-              <input type="text" id="e-responsible" class="e-input" placeholder="שם המתנדב...">
-            </div>
+        <div id="importMsg" class="import-msg"></div>
+        <div id="importPreview" class="import-preview-wrap"></div>
+        <button class="save-btn" id="doImportBtn" style="display:none" onclick="doImport()">ייבא לגיליון</button>
+      </div>
+    </div>
+  </div>
 
-            <div class="field">
-              <label>הערות מתנדבים</label>
-              <textarea id="e-notes" class="e-textarea" rows="5" placeholder="הוסף הערות..."></textarea>
-            </div>
-
-            <button class="save-btn" id="saveBtn" onclick="saveChanges()">💾 שמור שינויים</button>
-            <div id="saveMsg" class="save-msg"></div>
-          </div>
+  <!-- CONFIG MODAL -->
+  <div id="configOverlay" class="overlay hidden">
+    <div class="modal config-modal">
+      <div class="modal-header">
+        <h2>⚙️ הגדרות</h2>
+        <button class="close-btn" id="configCloseBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Apps Script URL</label>
+          <input type="text" id="cfg-url" class="e-input" placeholder="https://script.google.com/macros/s/.../exec">
         </div>
+        <div class="field">
+          <label>שם הגיליון</label>
+          <input type="text" id="cfg-sheet" class="e-input" value="DATABASE">
+        </div>
+        <button class="save-btn" onclick="saveConfig()">שמור והתחבר</button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- IMPORT MODAL -->
-<div id="importOverlay" class="overlay hidden">
-  <div class="modal import-modal">
-    <div class="modal-header">
-      <h2>📥 ייבוא מ-Excel</h2>
-      <button class="close-btn" id="importCloseBtn">✕</button>
-    </div>
-    <div class="modal-body">
-      <p class="import-hint">העלה קובץ Excel. הכותרות הבאות יזוהו אוטומטית:<br>
-        <strong>כותרת, תיאור, מיקום, הערות, פרטי איש קשר, קישור למשימה למתנדב</strong>
-      </p>
-      <p class="import-hint-sub">כפולות ידולגו אוטומטית. כתובות יסווגו לאחד מ-19 האזורים.</p>
+  <div class="toast" id="toast"></div>
+  <button class="gear-fab" onclick="openConfig()">⚙️</button>
 
-      <label class="file-drop" id="fileDrop">
-        <span id="fileDropLabel">לחץ או גרור קובץ Excel לכאן</span>
-        <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none">
-      </label>
-
-      <div id="importMsg" class="import-msg"></div>
-      <div id="importPreview" class="import-preview-wrap"></div>
-      <button class="save-btn" id="doImportBtn" style="display:none" onclick="doImport()">ייבא לגיליון</button>
-    </div>
-  </div>
-</div>
-
-<!-- CONFIG MODAL -->
-<div id="configOverlay" class="overlay hidden">
-  <div class="modal config-modal">
-    <div class="modal-header">
-      <h2>⚙️ הגדרות</h2>
-      <button class="close-btn" id="configCloseBtn">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="field">
-        <label>Apps Script URL</label>
-        <input type="text" id="cfg-url" class="e-input" placeholder="https://script.google.com/macros/s/.../exec">
-      </div>
-      <div class="field">
-        <label>שם הגיליון</label>
-        <input type="text" id="cfg-sheet" class="e-input" value="DATABASE">
-      </div>
-      <button class="save-btn" onclick="saveConfig()">שמור והתחבר</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-<button class="gear-fab" onclick="openConfig()">⚙️</button>
-
-<script src="app.js"></script>
+  <script src="app.js"></script>
 </body>
+
 </html>
