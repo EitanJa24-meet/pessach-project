@@ -282,3 +282,7 @@ html, body {
 .skel-md { width: 90px; }
 .skel-sm { width: 60px; }
 @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+/* ── LINK COPY BUTTON ── */
+.tbl-link { border-color: #c4621a !important; color: #c4621a !important; background: #fdf0e6 !important; }
+.tbl-link:hover { background: #f5d5b8 !important; }
