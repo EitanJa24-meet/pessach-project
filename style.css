@@ -268,3 +268,17 @@ html, body {
 .modal-header { background: #e8f2eb; border-bottom-color: #c8e6d0 !important; }
 .edit-card { background: #e8f2eb !important; border-color: #c8e6d0 !important; }
 .edit-card-title { color: #3d6b4a !important; }
+
+/* ── SKELETON LOADING ── */
+.skeleton-row td { padding: 10px 12px !important; }
+.skel {
+  display: inline-block; border-radius: 6px;
+  background: linear-gradient(90deg, #e4dfd4 25%, #ede8de 50%, #e4dfd4 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  height: 14px; vertical-align: middle;
+}
+.skel-lg { width: 140px; }
+.skel-md { width: 90px; }
+.skel-sm { width: 60px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }

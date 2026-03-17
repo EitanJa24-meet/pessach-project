@@ -34,8 +34,177 @@ function badgeHTML(s) {
 // =============================================
 //  AREA CLASSIFIER — comprehensive Israeli cities
 // =============================================
+// =============================================
+//  AREA CLASSIFIER — extracts city from address,
+//  handles merged cells, normalizes Hebrew text
+// =============================================
+
+// Map every city/town/village in Israel → area
+// Keyed by normalized Hebrew name (no nikud, trimmed)
+const CITY_TO_AREA = {
+  // ירושלים
+  'ירושלים':'ירושלים','בית הכרם':'ירושלים','מלחה':'ירושלים','גילה':'ירושלים',
+  'רמות':'ירושלים','פסגת זאב':'ירושלים','הר נוף':'ירושלים','קטמון':'ירושלים',
+  'בקעה':'ירושלים','טלביה':'ירושלים','רחביה':'ירושלים','עין כרם':'ירושלים',
+  'ארנונה':'ירושלים','קריית יובל':'ירושלים','מוצא':'ירושלים','בית זית':'ירושלים',
+  'אבו גוש':'ירושלים','קריית ענבים':'ירושלים','מעלה החמישה':'ירושלים',
+  'הר אדר':'ירושלים','גבעת זאב':'ירושלים','גבעון':'ירושלים','ביתר עילית':'ירושלים',
+  'צור הדסה':'ירושלים','עמינדב':'ירושלים','כסלון':'ירושלים','בית מאיר':'ירושלים',
+  // עמק יזרעאל
+  'עפולה':'עמק יזרעאל','מגדל העמק':'עמק יזרעאל','נוף הגליל':'עמק יזרעאל',
+  'נצרת עילית':'עמק יזרעאל','כפר יהושע':'עמק יזרעאל','מרחביה':'עמק יזרעאל',
+  'עין חרוד':'עמק יזרעאל','גדעונה':'עמק יזרעאל','תל יוסף':'עמק יזרעאל',
+  'עין דור':'עמק יזרעאל','נהלל':'עמק יזרעאל','כפר ברוך':'עמק יזרעאל',
+  'יפעת':'עמק יזרעאל','גניגר':'עמק יזרעאל','דבורייה':'עמק יזרעאל',
+  'בית שאן':'עמק יזרעאל','בית לחם הגלילית':'עמק יזרעאל',
+  // גבעת שמואל + פתח תקווה
+  'גבעת שמואל':'גבעת שמואל + פתח תקווה','פתח תקווה':'גבעת שמואל + פתח תקווה',
+  'כפר סבא':'גבעת שמואל + פתח תקווה','הוד השרון':'גבעת שמואל + פתח תקווה',
+  'ראש העין':'גבעת שמואל + פתח תקווה','קלנסווה':'גבעת שמואל + פתח תקווה',
+  'טייבה':'גבעת שמואל + פתח תקווה','טירה':'גבעת שמואל + פתח תקווה',
+  // גבעתיים ורמת גן
+  'גבעתיים':'גבעתיים ורמת גן','רמת גן':'גבעתיים ורמת גן',
+  'בני ברק':'גבעתיים ורמת גן','קריית אונו':'גבעתיים ורמת גן',
+  'אור יהודה':'גבעתיים ורמת גן','גני תקווה':'גבעתיים ורמת גן',
+  'בת ים':'גבעתיים ורמת גן','חולון':'גבעתיים ורמת גן',
+  // זכרון והסביבה
+  'זכרון יעקב':'זכרון והסביבה','בנימינה':'זכרון והסביבה',
+  'פרדס חנה':'זכרון והסביבה','כרכור':'זכרון והסביבה',
+  'גבעת עדה':'זכרון והסביבה','עמיקם':'זכרון והסביבה',
+  'רמת הנדיב':'זכרון והסביבה','עין כרמל':'זכרון והסביבה',
+  'פרדסייה':'זכרון והסביבה','גבעת נילי':'זכרון והסביבה',
+  // ראשון לציון
+  'ראשון לציון':'ראשון לציון','נס ציונה':'ראשון לציון',
+  'יבנה':'ראשון לציון','גן יבנה':'ראשון לציון','באר יעקב':'ראשון לציון',
+  'צריפין':'ראשון לציון',
+  // תל אביב
+  'תל אביב':'תל אביב','יפו':'תל אביב','נווה צדק':'תל אביב',
+  'פלורנטין':'תל אביב','רמת אביב':'תל אביב','צהלה':'תל אביב',
+  // רעננה
+  'רעננה':'רעננה','הרצליה':'רעננה','כפר שמריהו':'רעננה',
+  'כפר נטר':'רעננה','אבן יהודה':'רעננה','צור יגאל':'רעננה','תל מונד':'רעננה',
+  // שפלה
+  'לוד':'שפלה','רמלה':'שפלה','קריית גת':'שפלה','קריית מלאכי':'שפלה',
+  'גדרה':'שפלה','רחובות':'שפלה','מזכרת בתיה':'שפלה','פדיה':'שפלה',
+  'חולדה':'שפלה','עקרון':'שפלה','בית דגן':'שפלה','נחם':'שפלה',
+  // לב השרון עמק חפר
+  'נתניה':'לב השרון עמק חפר והסביבה','חדרה':'לב השרון עמק חפר והסביבה',
+  'קיסריה':'לב השרון עמק חפר והסביבה','קדימה':'לב השרון עמק חפר והסביבה',
+  'צורן':'לב השרון עמק חפר והסביבה','מכמורת':'לב השרון עמק חפר והסביבה',
+  'בית יצחק':'לב השרון עמק חפר והסביבה','אלישמע':'לב השרון עמק חפר והסביבה',
+  'עין ורד':'לב השרון עמק חפר והסביבה','גבעת חיים':'לב השרון עמק חפר והסביבה',
+  'משמר השרון':'לב השרון עמק חפר והסביבה','תל יצחק':'לב השרון עמק חפר והסביבה',
+  'כפר ויתקין':'לב השרון עמק חפר והסביבה','בית חנניה':'לב השרון עמק חפר והסביבה',
+  'אלוני יצחק':'לב השרון עמק חפר והסביבה','מעברות':'לב השרון עמק חפר והסביבה',
+  'ניצני עוז':'לב השרון עמק חפר והסביבה','אבני חפץ':'לב השרון עמק חפר והסביבה',
+  'כפר חיים':'לב השרון עמק חפר והסביבה','עין שריג':'לב השרון עמק חפר והסביבה',
+  // משגב והסביבה
+  'כרמיאל':'משגב והסביבה','עכו':'משגב והסביבה','נהריה':'משגב והסביבה',
+  'שלומי':'משגב והסביבה','מעלות תרשיחא':'משגב והסביבה','מעלות':'משגב והסביבה',
+  'כפר מנדא':'משגב והסביבה','עילבון':'משגב והסביבה','סחנין':'משגב והסביבה',
+  'טמרה':'משגב והסביבה','מגאר':'משגב והסביבה','דיר חנא':'משגב והסביבה',
+  'ראמה':'משגב והסביבה','בועינה':'משגב והסביבה','חורפיש':'משגב והסביבה',
+  'פסוטה':'משגב והסביבה','כפר כנא':'משגב והסביבה','עצמון שגב':'משגב והסביבה',
+  'כפר זיתים':'משגב והסביבה','אלון הגליל':'משגב והסביבה','ביר אלמכסור':'משגב והסביבה',
+  // שומרון
+  'אריאל':'שומרון','עלי':'שומרון','אלפי מנשה':'שומרון','קרני שומרון':'שומרון',
+  'ברקן':'שומרון','עופרה':'שומרון','בית אל':'שומרון','שילה':'שומרון',
+  'נופים':'שומרון','קדומים':'שומרון','כוכב יעקב':'שומרון','אלון מורה':'שומרון',
+  'רחלים':'שומרון','איתמר':'שומרון','ברכה':'שומרון','עמנואל':'שומרון',
+  'מתתיהו':'שומרון','נחליאל':'שומרון','כפר תפוח':'שומרון','גבע בנימין':'שומרון',
+  'חיננית':'שומרון','מבוא שומרון':'שומרון','מעלה שומרון':'שומרון',
+  'כפר אדומים':'שומרון','נוקדים':'שומרון','מעלה אדומים':'שומרון',
+  'אלון':'שומרון','מצפה יריחו':'שומרון','גבעת אסף':'שומרון',
+  // מודיעין
+  'מודיעין':'מודיעין','מכבים':'מודיעין','רעות':'מודיעין','שוהם':'מודיעין',
+  'מודיעין עילית':'מודיעין','לטרון':'מודיעין','כפר רות':'מודיעין',
+  // חיפה
+  'חיפה':'חיפה','טירת כרמל':'חיפה','נשר':'חיפה','קריית אתא':'חיפה',
+  'קריית ביאליק':'חיפה','קריית מוצקין':'חיפה','קריית ים':'חיפה',
+  'קריית חיים':'חיפה','עוספייה':'חיפה','דלית אל כרמל':'חיפה','עין הוד':'חיפה',
+  // מועצה איזורית גזר
+  'חשמונאים':'מועצה איזורית גזר','כפר מעש':'מועצה איזורית גזר',
+  'בן שמן':'מועצה איזורית גזר','גינתון':'מועצה איזורית גזר',
+  'נטעים':'מועצה איזורית גזר','מזור':'מועצה איזורית גזר',
+  'כפר דניאל':'מועצה איזורית גזר','בית עריף':'מועצה איזורית גזר',
+  // גוש עציון
+  'אפרת':'גוש עציון','אלעזר':'גוש עציון','כפר עציון':'גוש עציון',
+  'נווה דניאל':'גוש עציון','אלון שבות':'גוש עציון','תקוע':'גוש עציון',
+  'קריית ארבע':'גוש עציון','הר גילה':'גוש עציון','מגדל עוז':'גוש עציון',
+  'ראש צורים':'גוש עציון','פני הבר':'גוש עציון',
+  // אשקלון
+  'אשקלון':'אשקלון','שדרות':'אשקלון','נתיבות':'אשקלון','אופקים':'אשקלון',
+  'מגן':'אשקלון','ניר עם':'אשקלון','תקומה':'אשקלון','ברור חיל':'אשקלון',
+  'רעים':'אשקלון','בארי':'אשקלון','כפר עזה':'אשקלון','נחל עוז':'אשקלון',
+  'עלומים':'אשקלון','צאלים':'אשקלון','גבעתי':'אשקלון',
+  // באר שבע
+  'באר שבע':'באר שבע','דימונה':'באר שבע','ירוחם':'באר שבע',
+  'מצפה רמון':'באר שבע','ערד':'באר שבע','להבים':'באר שבע','עומר':'באר שבע',
+  'מיתר':'באר שבע','תל שבע':'באר שבע','ראהט':'באר שבע','לקיה':'באר שבע',
+  'חורה':'באר שבע','שגב שלום':'באר שבע','כסייפה':'באר שבע','שדה בוקר':'באר שבע',
+  'נבטים':'באר שבע','כרמים':'באר שבע',
+  // בית שמש
+  'בית שמש':'בית שמש','צרעה':'בית שמש','זנוח':'בית שמש','עגור':'בית שמש',
+  'הר טוב':'בית שמש','אמציה':'בית שמש','לכיש':'בית שמש',
+  'כפר מנחם':'בית שמש','שריגים':'בית שמש',
+};
+
+// Normalize Hebrew: remove extra spaces, handle merged words
+function normalizeHebrew(s) {
+  return String(s||'').trim()
+    .replace(/\s+/g,' ')
+    .replace(/[׳']/g,"'");
+}
+
+// Split merged Hebrew text into candidate words
+// e.g. "אלוןכפר אדומים" → ["אלון","כפר אדומים","אלוןכפר","אדומים"]
+function splitMerged(text) {
+  const candidates = [text];
+  // Try splitting at every possible position
+  for (let i=2; i<text.length-1; i++) {
+    const a = text.slice(0,i).trim();
+    const b = text.slice(i).trim();
+    if (a.length>1) candidates.push(a);
+    if (b.length>1) candidates.push(b);
+  }
+  return candidates;
+}
+
+function classifyArea(rawAddress) {
+  if (!rawAddress) return '';
+  const address = normalizeHebrew(rawAddress);
+
+  // Strategy 1: last token after comma = city name (most reliable for "רחוב 5, עיר")
+  const parts = address.split(',').map(s=>s.trim()).filter(Boolean);
+  for (let i = parts.length-1; i >= 0; i--) {
+    const city = parts[i].trim();
+    // Try exact match
+    if (CITY_TO_AREA[city]) return CITY_TO_AREA[city];
+    // Try removing street number: "הדסים 17" → check each word
+    for (const word of city.split(' ')) {
+      if (word.length>2 && CITY_TO_AREA[word]) return CITY_TO_AREA[word];
+    }
+  }
+
+  // Strategy 2: scan every word in the full address (longest first)
+  const words = address.split(/[\s,]+/).filter(w=>w.length>1);
+  const sortedCities = Object.keys(CITY_TO_AREA).sort((a,b)=>b.length-a.length);
+  for (const city of sortedCities) {
+    if (address.includes(city)) return CITY_TO_AREA[city];
+  }
+
+  // Strategy 3: handle merged cells — try splitting merged text
+  const noSpaces = address.replace(/\s/g,'').replace(/,/g,'');
+  for (const city of sortedCities) {
+    const cityNoSpace = city.replace(/\s/g,'');
+    if (noSpaces.includes(cityNoSpace)) return CITY_TO_AREA[city];
+  }
+
+  return '';
+}
+
+// Keep AREAS for the filter dropdown (unused in classifier now)
 const AREAS = {
-  'ירושלים': [
     'ירושלים','jerusalem','בית הכרם','מלחה','גילה','רמות','פסגת זאב','הר נוף',
     'קטמון','בקעה','טלביה','רחביה','עין כרם','ארנונה','גוננים','קריית יובל',
     'שעריים','מוצא','בית זית','מטה יהודה','אבו גוש','בית מאיר','בית נקופה',
@@ -140,25 +309,7 @@ const AREAS = {
   ],
 };
 
-// Build reverse lookup: every keyword → area (lowercase)
-const KEYWORD_MAP = {};
-for (const [area, keywords] of Object.entries(AREAS)) {
-  for (const kw of keywords) {
-    KEYWORD_MAP[kw.toLowerCase().trim()] = area;
-  }
-}
-// Sort keywords longest-first so longer matches win
-const SORTED_KEYWORDS = Object.keys(KEYWORD_MAP).sort((a,b) => b.length - a.length);
 
-function classifyArea(address) {
-  if (!address) return '';
-  const low = address.toLowerCase().trim();
-  // Try longest keyword first
-  for (const kw of SORTED_KEYWORDS) {
-    if (low.includes(kw)) return KEYWORD_MAP[kw];
-  }
-  return '';
-}
 
 // ---- PHONE ----
 function normPhone(p) {
@@ -189,15 +340,57 @@ async function api(params, usePost) {
 }
 
 // ---- LOAD DATA ----
-async function loadData() {
+const CACHE_KEY = 'vdash_rows';
+const CACHE_TS  = 'vdash_ts';
+
+async function loadData(silent) {
   if (!LIVE) { allRows = demoData(); applyFilters(); updateCount(); return; }
+
+  // Show cached data instantly
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
+    try {
+      allRows = JSON.parse(cached);
+      applyFilters();
+      updateCount(true);
+    } catch(e) { localStorage.removeItem(CACHE_KEY); }
+  } else {
+    // No cache — show skeleton
+    renderTable();
+    document.getElementById('countLabel').textContent = 'טוען...';
+  }
+
+  // Fetch fresh
   try {
     const j = await api({ action:'read', sheet: cfg.sheet||'DATABASE' });
-    if (j.rows) { allRows = j.rows.slice(1); applyFilters(); updateCount(); }
-    else showToast('שגיאה: ' + (j.error||''));
-  } catch(e) { showToast('שגיאת חיבור: ' + e.message); console.error(e); }
+    if (j.rows) {
+      allRows = j.rows.slice(1).filter(r => r.some(c => String(c).trim() !== ''));
+      localStorage.setItem(CACHE_KEY, JSON.stringify(allRows));
+      localStorage.setItem(CACHE_TS,  Date.now().toString());
+      applyFilters();
+      updateCount(false);
+    } else {
+      showToast('שגיאה: ' + (j.error||'תשובה לא תקינה'));
+      document.getElementById('countLabel').textContent = 'שגיאה';
+    }
+  } catch(e) {
+    console.error('loadData error:', e);
+    document.getElementById('countLabel').textContent = cached ? 'cache בלבד' : 'שגיאת חיבור';
+    if (!cached) showToast('לא ניתן להתחבר לגיליון — בדוק ⚙️');
+  }
 }
-function updateCount() { document.getElementById('countLabel').textContent = `${allRows.length} בקשות`; }
+
+function updateCount(stale) {
+  const el = document.getElementById('countLabel');
+  el.textContent = `${allRows.length} בקשות`;
+  if (stale) {
+    const ts = localStorage.getItem(CACHE_TS);
+    if (ts) {
+      const mins = Math.round((Date.now() - parseInt(ts)) / 60000);
+      el.textContent += ` · עודכן לפני ${mins < 1 ? 'פחות מדקה' : mins + ' דק'}`;
+    }
+  }
+}
 
 // ---- FILTERS ----
 function applyFilters() {
@@ -224,15 +417,34 @@ function applyFilters() {
 // ---- TABLE ----
 function renderTable() {
   const tbody = document.getElementById('tableBody');
+
+  // Still loading (no cache, no data yet)
+  if (!allRows.length) {
+    tbody.innerHTML = Array(7).fill(0).map(()=>`
+      <tr class="skeleton-row">
+        <td><span class="skel skel-lg"></span></td>
+        <td><span class="skel skel-md"></span></td>
+        <td><span class="skel skel-sm"></span></td>
+        <td><span class="skel skel-md"></span></td>
+        <td><span class="skel skel-sm"></span></td>
+        <td><span class="skel skel-md"></span></td>
+        <td><span class="skel skel-sm"></span></td>
+        <td></td>
+      </tr>`).join('');
+    return;
+  }
+
   if (!filteredRows.length) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:60px;color:#8a8278">לא נמצאו בקשות</td></tr>';
     return;
   }
   tbody.innerHTML = filteredRows.map((row, i) => {
-    const ph   = row[C.phone] || '';
+    const ph   = String(row[C.phone]   || '');
+    const link = String(row[C.link]    || '');
     const np   = normPhone(ph);
-    const addr = encodeURIComponent(row[C.address]||'');
-    const bCls = STATUS_BADGE[row[C.status]] || 'badge-none';
+    const addr = encodeURIComponent(String(row[C.address]||''));
+    const safeLink = link.replace(/'/g, "\\'");
+    const safePh   = ph.replace(/'/g, "\\'");
     return `<tr id="row-${i}">
       <td><span class="cell-text"><strong>${esc(row[C.title])}</strong></span></td>
       <td><span class="cell-text" style="color:#5a5248">${esc(row[C.address])}</span></td>
@@ -252,7 +464,8 @@ function renderTable() {
           onkeydown="if(event.key==='Enter'){this.blur()}">
       </td>
       <td class="actions-cell">
-        ${ph?`<button class="tbl-btn" onclick="copyText('${ph.replace(/'/g,"\\'")}','טלפון הועתק')" title="העתק">📋</button>`:''}
+        ${link?`<button class="tbl-btn tbl-link" onclick="copyText('${safeLink}','קישור הועתק')" title="העתק קישור רישום">🔗</button>`:''}
+        ${ph?`<button class="tbl-btn" onclick="copyText('${safePh}','טלפון הועתק')" title="העתק טלפון">📋</button>`:''}
         ${np?`<button class="tbl-btn" onclick="window.open('https://wa.me/${np}','_blank')" title="WhatsApp">💬</button>`:''}
         ${row[C.address]?`<button class="tbl-btn" onclick="window.open('https://www.google.com/maps/search/?api=1&query=${addr}','_blank')" title="ניווט">🧭</button>`:''}
         <button class="tbl-btn tbl-open" onclick="openModal(${i})" title="פתח">✎</button>
