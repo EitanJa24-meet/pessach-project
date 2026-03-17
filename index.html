@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>מערכת תיאום מתנדבים</title>
+<title>מרכז פיקוד מתנדבים</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -17,27 +17,20 @@
       <span class="brand-dot"></span>
       <span class="brand-title">מרכז פיקוד מתנדבים</span>
     </div>
-    <div class="topbar-center" id="liveCount">
+    <div class="topbar-center">
       <span class="pulse-dot"></span>
       <span id="countLabel">טוען...</span>
     </div>
     <div class="topbar-actions">
-      <button class="view-btn active" id="btnTable" onclick="setView('table')">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="3" rx="1" fill="currentColor"/><rect x="1" y="6" width="14" height="3" rx="1" fill="currentColor"/><rect x="1" y="11" width="14" height="3" rx="1" fill="currentColor"/></svg>
-        רשימה
-      </button>
-      <button class="view-btn" id="btnMap" onclick="setView('map')">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 1C5.24 1 3 3.24 3 6c0 3.5 5 9 5 9s5-5.5 5-9c0-2.76-2.24-5-5-5z" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-        מפה
-      </button>
-      <button class="refresh-btn" onclick="loadData()" title="רענן">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M13.5 8a5.5 5.5 0 11-1.5-3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><polyline points="14,2 14,5.5 10.5,5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+      <button class="view-btn active" id="btnTable" onclick="setView('table')">רשימה</button>
+      <button class="view-btn" id="btnMap" onclick="setView('map')">מפה</button>
+      <button class="import-btn" onclick="openImport()">📥 ייבוא Excel</button>
+      <button class="refresh-btn" onclick="loadData()" title="רענן">↻</button>
     </div>
   </div>
 </header>
 
-<!-- FILTERS BAR -->
+<!-- FILTERS -->
 <div class="filters-bar">
   <div class="filters-inner">
     <div class="filter-group">
@@ -80,13 +73,6 @@
       <label>חיפוש</label>
       <input type="text" id="filterSearch" placeholder="כותרת, כתובת, שם..." oninput="applyFilters()">
     </div>
-    <div class="filter-pills" id="statusPills">
-      <button class="pill pill-urgent active" onclick="pillFilter('צריך מתנדבים דחוף', this)">דחוף</button>
-      <button class="pill pill-inprogress active" onclick="pillFilter('בטיפול', this)">בטיפול</button>
-      <button class="pill pill-checking active" onclick="pillFilter('בבדיקה עם מתנדבים', this)">בבדיקה</button>
-      <button class="pill pill-done active" onclick="pillFilter('טופל', this)">טופל</button>
-      <button class="pill pill-irrelevant active" onclick="pillFilter('לא רלוונטי', this)">לא רלוונטי</button>
-    </div>
     <div class="filter-count" id="filterCount"></div>
   </div>
 </div>
@@ -97,18 +83,12 @@
     <table class="requests-table" id="requestsTable">
       <thead>
         <tr>
-          <th>כותרת</th>
-          <th>כתובת</th>
-          <th>אזור</th>
-          <th>שם מבקש</th>
-          <th>טלפון</th>
-          <th>סטטוס</th>
-          <th>אחראי</th>
-          <th>פעולות</th>
+          <th>כותרת</th><th>כתובת</th><th>אזור</th><th>שם מבקש</th>
+          <th>טלפון</th><th>סטטוס</th><th>אחראי</th><th>פעולות</th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr class="loading-row"><td colspan="8"><div class="loader"></div><span>טוען נתונים...</span></td></tr>
+        <tr class="loading-row"><td colspan="8"><div class="loader"></div><span>טוען...</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -127,7 +107,7 @@
 
 <!-- REQUEST DETAIL MODAL -->
 <div id="modalOverlay" class="modal-overlay hidden" onclick="closeModal(event)">
-  <div class="modal" id="requestModal">
+  <div class="modal">
     <div class="modal-header">
       <div class="modal-title-area">
         <h2 id="modalTitle">—</h2>
@@ -135,65 +115,28 @@
       </div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-
     <div class="modal-body">
       <div class="modal-cols">
-        <!-- LEFT: Details -->
         <div class="modal-col">
           <div class="detail-section">
             <h3 class="section-label">פרטי הבקשה</h3>
-            <div class="detail-row">
-              <span class="detail-label">תיאור</span>
-              <span class="detail-value" id="modalDesc">—</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">כתובת</span>
-              <span class="detail-value" id="modalAddress">—</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">אזור</span>
-              <span class="detail-value" id="modalArea">—</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">קישור למשימה</span>
-              <span class="detail-value" id="modalLink">—</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">נוצר</span>
-              <span class="detail-value" id="modalCreated">—</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">עדכון אחרון</span>
-              <span class="detail-value" id="modalUpdated">—</span>
-            </div>
+            <div class="detail-row"><span class="detail-label">תיאור</span><span class="detail-value" id="modalDesc">—</span></div>
+            <div class="detail-row"><span class="detail-label">כתובת</span><span class="detail-value" id="modalAddress">—</span></div>
+            <div class="detail-row"><span class="detail-label">אזור</span><span class="detail-value" id="modalArea">—</span></div>
+            <div class="detail-row"><span class="detail-label">קישור</span><span class="detail-value" id="modalLink">—</span></div>
+            <div class="detail-row"><span class="detail-label">נוצר</span><span class="detail-value" id="modalCreated">—</span></div>
+            <div class="detail-row"><span class="detail-label">עדכון</span><span class="detail-value" id="modalUpdated">—</span></div>
           </div>
-
           <div class="detail-section">
             <h3 class="section-label">פרטי מבקש</h3>
-            <div class="detail-row">
-              <span class="detail-label">שם</span>
-              <span class="detail-value" id="modalContactName">—</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">טלפון</span>
-              <span class="detail-value" id="modalPhone">—</span>
-            </div>
+            <div class="detail-row"><span class="detail-label">שם</span><span class="detail-value" id="modalContactName">—</span></div>
+            <div class="detail-row"><span class="detail-label">טלפון</span><span class="detail-value" id="modalPhone">—</span></div>
             <div class="modal-actions-row">
-              <button class="action-btn wa-btn" id="modalWaBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                WhatsApp
-              </button>
-              <button class="action-btn nav-btn" id="modalNavBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                ניווט
-              </button>
-              <button class="action-btn copy-btn" id="modalCopyBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                העתק טלפון
-              </button>
+              <button class="action-btn wa-btn" id="modalWaBtn">💬 WhatsApp</button>
+              <button class="action-btn nav-btn" id="modalNavBtn">🧭 ניווט</button>
+              <button class="action-btn copy-btn" id="modalCopyBtn">📋 העתק טלפון</button>
             </div>
           </div>
-
           <div class="detail-section">
             <h3 class="section-label">הערות פנימיות</h3>
             <p class="readonly-notes" id="modalInternalNotes">—</p>
@@ -204,15 +147,13 @@
             <p class="readonly-notes" id="modalSysNotes2">—</p>
           </div>
         </div>
-
-        <!-- RIGHT: Editable Fields -->
         <div class="modal-col edit-col">
           <div class="edit-section">
-            <h3 class="section-label edit-label">✏️ שדות עריכה</h3>
-
+            <h3 class="section-label edit-label">✏️ עריכה</h3>
             <div class="edit-field">
               <label>סטטוס</label>
               <select id="editStatus" class="edit-select">
+                <option value="">— ללא סטטוס —</option>
                 <option>צריך מתנדבים דחוף</option>
                 <option>בטיפול</option>
                 <option>בבדיקה עם מתנדבים</option>
@@ -220,26 +161,19 @@
                 <option>לא רלוונטי</option>
               </select>
             </div>
-
             <div class="edit-field">
               <label>אחראי משימה</label>
               <input type="text" id="editResponsible" class="edit-input" placeholder="שם המתנדב האחראי...">
             </div>
-
             <div class="edit-field">
               <label>הערות מתנדבים</label>
               <textarea id="editVolunteerNotes" class="edit-textarea" rows="6" placeholder="הוסף הערות..."></textarea>
             </div>
-
-            <button class="save-btn" id="saveBtn" onclick="saveChanges()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              שמור שינויים
-            </button>
+            <button class="save-btn" onclick="saveChanges()">שמור שינויים</button>
             <div class="save-status" id="saveStatus"></div>
           </div>
-
           <div class="detail-section">
-            <h3 class="section-label">הערות מתנדבים (קריאה)</h3>
+            <h3 class="section-label">הערות מתנדבים (קיים)</h3>
             <p class="readonly-notes" id="modalVolNotes">—</p>
           </div>
         </div>
@@ -248,46 +182,54 @@
   </div>
 </div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+<!-- IMPORT MODAL -->
+<div id="importOverlay" class="modal-overlay hidden" onclick="closeImport(event)">
+  <div class="modal import-modal">
+    <div class="modal-header">
+      <h2>📥 ייבוא מ-Excel</h2>
+      <button class="modal-close" onclick="closeImport()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-instructions">
+        <p>בחר קובץ Excel עם עמודות: <strong>כותרת, תיאור, מיקום, הערות, פרטי איש קשר, קישור למשימה למתנדב</strong></p>
+        <p style="color:var(--text-muted);font-size:13px;margin-top:6px">כפולות יזוהו אוטומטית ויושמטו. כתובות יסווגו לאזורים אוטומטית.</p>
+      </div>
+      <div class="edit-field" style="margin-top:16px">
+        <label>בחר קובץ Excel</label>
+        <input type="file" id="importFileInput" accept=".xlsx,.xls" onchange="handleImportFile(this)" class="file-input">
+      </div>
+      <div class="import-status" id="importStatus"></div>
+      <div id="importPreview" class="import-preview"></div>
+      <button class="save-btn hidden" id="importDoBtn" onclick="doImport()"></button>
+    </div>
+  </div>
+</div>
 
 <!-- CONFIG MODAL -->
 <div id="configOverlay" class="modal-overlay hidden" onclick="closeConfig(event)">
   <div class="modal config-modal">
     <div class="modal-header">
-      <h2>הגדרות חיבור לגיליון</h2>
+      <h2>⚙️ הגדרות חיבור</h2>
       <button class="modal-close" onclick="closeConfig()">✕</button>
     </div>
     <div class="modal-body">
       <div class="edit-field">
-        <label>מזהה Google Sheet</label>
-        <input type="text" id="sheetIdInput" class="edit-input" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
-        <small>מתוך הכתובת: docs.google.com/spreadsheets/d/<strong>זה-המזהה</strong>/edit</small>
+        <label>Apps Script URL</label>
+        <input type="text" id="scriptUrlInput" class="edit-input" placeholder="https://script.google.com/macros/s/.../exec">
       </div>
       <div class="edit-field">
-        <label>שם הגיליון (Tab)</label>
+        <label>שם הגיליון</label>
         <input type="text" id="sheetNameInput" class="edit-input" value="DATABASE">
       </div>
-      <div class="edit-field">
-        <label>Apps Script Deployment URL</label>
-        <input type="text" id="scriptUrlInput" class="edit-input" placeholder="https://script.google.com/macros/s/.../exec">
-        <small>כתובת ה-Web App שפרסמת מה-Google Apps Script</small>
-      </div>
       <button class="save-btn" onclick="saveConfig()">שמור והתחבר</button>
-      <div class="config-help">
-        <h4>איך מחברים?</h4>
-        <ol>
-          <li>פתח את הגיליון → Extensions → Apps Script</li>
-          <li>הדבק את קוד <code>apps-script.gs</code> ולחץ Deploy → Web App</li>
-          <li>בחר "Anyone" ב-Execute as</li>
-          <li>העתק את ה-URL לכאן</li>
-        </ol>
-      </div>
     </div>
   </div>
 </div>
 
-<!-- GEAR BUTTON -->
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- GEAR -->
 <button class="gear-btn" onclick="openConfig()" title="הגדרות">⚙️</button>
 
 <script src="app.js"></script>

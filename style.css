@@ -34,6 +34,16 @@
 html { direction: rtl; }
 body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
+.import-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--done);
+  background: var(--done-bg); color: var(--done);
+  font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .18s;
+}
+.import-btn:hover { filter: brightness(1.2); }
+
 /* ===== TOPBAR ===== */
 .topbar {
   position: fixed; top: 0; right: 0; left: 0; z-index: 100;
@@ -338,6 +348,39 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x:
 .config-help code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 12px; color: var(--accent); }
 .edit-field small { display: block; margin-top: 5px; font-size: 11px; color: var(--text-dim); }
 
+/* ===== IMPORT BUTTON ===== */
+.import-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--accent); background: var(--accent-glow);
+  color: var(--accent); font-family: 'Heebo', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all .18s;
+}
+.import-btn:hover { background: var(--accent); color: #fff; }
+
+.import-modal { max-width: 700px; }
+.import-instructions {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  font-size: 14px; line-height: 1.7;
+}
+.file-input {
+  width: 100%; padding: 10px; background: var(--bg3);
+  border: 2px dashed var(--border); border-radius: var(--radius-sm);
+  color: var(--text); font-family: 'Heebo', sans-serif; font-size: 14px;
+  cursor: pointer; transition: border-color .15s;
+}
+.file-input:hover { border-color: var(--accent); }
+.import-status {
+  margin-top: 12px; font-size: 13px; min-height: 24px;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.import-preview {
+  margin-top: 12px; max-height: 300px; overflow-y: auto;
+  border-radius: var(--radius-sm);
+}
+.import-preview .requests-table { font-size: 12px; }
+
 /* ===== GEAR BUTTON ===== */
 .gear-btn {
   position: fixed; bottom: 24px; right: 24px; z-index: 150;
@@ -372,3 +415,41 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x:
   .requests-table thead th:nth-child(5),
   .requests-table tbody td:nth-child(5) { display: none; }
 }
+
+/* ===== IMPORT BUTTON ===== */
+.import-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--checking); background: var(--checking-bg);
+  color: var(--checking); font-family: 'Heebo', sans-serif;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: all .18s;
+}
+.import-btn:hover { filter: brightness(1.15); }
+
+/* ===== IMPORT MODAL ===== */
+.import-modal { max-width: 700px; }
+.import-instructions {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 16px;
+  font-size: 14px; line-height: 1.6;
+}
+.import-status {
+  margin: 14px 0; font-size: 13px; min-height: 20px; line-height: 1.8;
+}
+.import-preview {
+  max-height: 300px; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  margin-bottom: 14px;
+}
+.import-preview table { margin: 0; }
+.file-input {
+  width: 100%; padding: 10px;
+  background: var(--bg3); border: 2px dashed var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: 'Heebo', sans-serif; font-size: 14px;
+  cursor: pointer; transition: border-color .15s;
+}
+.file-input:hover { border-color: var(--accent); }
+
+/* ===== CONFIG MODAL ===== */
+.config-modal { max-width: 480px; }
