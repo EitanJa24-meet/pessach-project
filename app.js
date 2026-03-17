@@ -369,6 +369,7 @@ async function loadData(silent) {
       localStorage.setItem(CACHE_KEY, JSON.stringify(allRows));
       localStorage.setItem(CACHE_TS, Date.now().toString());
       applyFilters();
+      if (currentView === 'table') initResizers();
       updateCount(false);
     } else {
       showToast('שגיאה: ' + (j.error || 'תשובה לא תקינה'));
@@ -411,7 +412,7 @@ function applyFilters() {
   fc.textContent = filteredRows.length === allRows.length
     ? `${allRows.length} בקשות`
     : `${filteredRows.length} מתוך ${allRows.length}`;
-  if (currentView === 'table') renderTable();
+  if (currentView === 'table') { renderTable(); initResizers(); }
   if (currentView === 'map') renderPins();
 }
 
@@ -449,12 +450,12 @@ function renderTable() {
     const safePh = ph.replace(/'/g, "\\'");
     const descShort = row[C.desc] && row[C.desc].length > 40 ? row[C.desc].substring(0, 40) + '...' : row[C.desc];
     return `<tr id="row-${i}">
-      <td><span class="cell-text"><strong>${esc(row[C.title])}</strong></span></td>
+      <td><span class="cell-text" title="${esc(row[C.title])}"><strong>${esc(row[C.title])}</strong></span></td>
       <td><span class="cell-text" style="color:#5a5248" title="${esc(row[C.desc])}">${esc(descShort)}</span></td>
-      <td><span class="cell-text" style="color:#5a5248">${esc(row[C.address])}</span></td>
-      <td><span class="cell-text" style="color:#5a5248">${esc(row[C.area])}</span></td>
-      <td><span class="cell-text">${esc(row[C.name])}</span></td>
-      <td><span class="cell-text" style="direction:ltr;text-align:right;color:#5a5248">${esc(ph)}</span></td>
+      <td><span class="cell-text" style="color:#5a5248" title="${esc(row[C.address])}">${esc(row[C.address])}</span></td>
+      <td><span class="cell-text" style="color:#5a5248" title="${esc(row[C.area])}">${esc(row[C.area])}</span></td>
+      <td><span class="cell-text" title="${esc(row[C.name])}">${esc(row[C.name])}</span></td>
+      <td><span class="cell-text" style="direction:ltr;text-align:right;color:#5a5248" title="${esc(ph)}">${esc(ph)}</span></td>
       <td>
         <select class="inline-select status-select status-${(STATUS_BADGE[row[C.status]] || 'badge-none').replace('badge-', '')}" onchange="inlineSave(${i},'status',this.value);this.className='inline-select status-select status-'+(window.STATUS_BADGE[this.value]||'badge-none').replace('badge-','')">
           <option value="" ${!row[C.status] ? 'selected' : ''}>— ללא —</option>
@@ -476,6 +477,37 @@ function renderTable() {
       </td>
     </tr>`;
   }).join('');
+}
+
+// ---- RESIZABLE COLUMNS ----
+function initResizers() {
+  const table = document.querySelector('.requests-table');
+  const headers = table.querySelectorAll('thead th');
+  headers.forEach(th => {
+    if (th.querySelector('.resizer')) return;
+    const resizer = document.createElement('div');
+    resizer.classList.add('resizer');
+    th.appendChild(resizer);
+    
+    let startX, startWidth;
+    resizer.addEventListener('mousedown', e => {
+      startX = e.pageX;
+      startWidth = th.offsetWidth;
+      table.classList.add('resizing');
+      
+      const onMouseMove = e => {
+        const width = startWidth - (e.pageX - startX); // RTL: subtract the diff
+        if (width > 50) th.style.width = width + 'px';
+      };
+      const onMouseUp = () => {
+        table.classList.remove('resizing');
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      };
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+  });
 }
 
 // ---- INLINE SAVE ----

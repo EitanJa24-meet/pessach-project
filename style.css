@@ -273,22 +273,21 @@ body {
 }
 
 .requests-table thead th {
-  padding: 9px 12px;
-  text-align: right;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .4px;
-  color: #8a8278;
-  border-bottom: 2px solid #d6cfc2;
-  background: #f5f0e8;
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-  z-index: 5;
+  padding:9px 12px; text-align:right; font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.4px; color:#4a7c59 !important;
+  border-bottom:2px solid #c8e6d0 !important; background:#e8f2eb !important; white-space:nowrap;
+  position:sticky; top:0; z-index:5;
+  user-select: none;
 }
-.col-status { width: 160px; }
-.col-responsible { width: 180px; }
+.requests-table th { position: relative; }
+.resizer {
+  position: absolute; right: 0; top: 0; height: 100%; width: 5px;
+  background: transparent; cursor: col-resize; z-index: 10;
+}
+.resizer:hover, .resizing .resizer { background: rgba(74, 124, 89, 0.3); }
+
+.col-status { width: 180px; min-width: 140px; }
+.col-responsible { width: 200px; min-width: 140px; }
 .requests-table tbody tr {
   border-bottom: 1px solid #d6cfc2;
   transition: background .1s;
@@ -298,19 +297,10 @@ body {
   background: #ede8de;
 }
 
-.requests-table tbody td {
-  padding: 0;
-  vertical-align: middle;
-}
+.requests-table tbody td { padding:0; vertical-align:middle; border-left: 1px solid transparent; }
 
-.cell-text {
-  padding: 10px 12px;
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-}
+.cell-text { padding:10px 12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.requests-table.resizing { cursor: col-resize; }
 
 /* Inline editable */
 .inline-select {
