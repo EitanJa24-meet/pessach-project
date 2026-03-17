@@ -21,6 +21,7 @@ const STATUS_BADGE = {
   'בבדיקה עם מתנדבים':'badge-checking','טופל':'badge-done',
   'לא רלוונטי':'badge-none','':'badge-none'
 };
+window.STATUS_BADGE = STATUS_BADGE;
 const STATUS_COLOR = {
   'צריך מתנדבים דחוף':'#b83232','בטיפול':'#2563a8',
   'בבדיקה עם מתנדבים':'#c4621a','טופל':'#4a7c59','לא רלוונטי':'#7a7468',''  :'#7a7468'
@@ -169,9 +170,19 @@ function normPhone(p) {
 }
 
 // ---- API — GET only, small payloads ----
-async function api(params) {
-  const url = cfg.url + '?' + new URLSearchParams(params).toString();
-  const res = await fetch(url);
+// GET for small calls (read/update), POST for large payloads (import)
+async function api(params, usePost) {
+  let res;
+  if (usePost) {
+    res = await fetch(cfg.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' }, // text/plain avoids CORS preflight
+      body: JSON.stringify(params),
+      redirect: 'follow',
+    });
+  } else {
+    res = await fetch(cfg.url + '?' + new URLSearchParams(params).toString(), { redirect: 'follow' });
+  }
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
   try { return JSON.parse(text); } catch(e) { throw new Error('Bad response: ' + text.slice(0,100)); }
@@ -229,7 +240,7 @@ function renderTable() {
       <td><span class="cell-text">${esc(row[C.name])}</span></td>
       <td><span class="cell-text" style="direction:ltr;text-align:right;color:#5a5248">${esc(ph)}</span></td>
       <td>
-        <select class="inline-select" onchange="inlineSave(${i},'status',this.value)">
+        <select class="inline-select status-select status-${(STATUS_BADGE[row[C.status]]||'badge-none').replace('badge-','')}" onchange="inlineSave(${i},'status',this.value);this.className='inline-select status-select status-'+(window.STATUS_BADGE[this.value]||'badge-none').replace('badge-','')">
           <option value="" ${!row[C.status]?'selected':''}>— ללא —</option>
           ${['צריך מתנדבים דחוף','בטיפול','בבדיקה עם מתנדבים','טופל','לא רלוונטי']
             .map(s=>`<option value="${s}" ${row[C.status]===s?'selected':''}>${s}</option>`).join('')}
@@ -481,22 +492,23 @@ function parseAndPreview(raw) {
   btn.textContent   = `📥 ייבא ${newRows.length} בקשות חדשות`;
 }
 
-// ---- DO IMPORT — sends ONE row at a time to avoid URL length limit ----
+// ---- DO IMPORT — uses POST to handle large payloads ----
 async function doImport() {
   const rows = window._importRows;
   if (!rows||!rows.length) return;
   const btn = document.getElementById('doImportBtn');
+  const msg = document.getElementById('importMsg');
   btn.disabled = true;
 
   if (!LIVE) {
     rows.forEach(r => allRows.push([r.id,r.title,r.desc,r.address,r.area,r.contactName,r.phone,r.status,r.link,r.responsible,r.volNotes,r.internalNotes,r.sys1,r.sys2,r.created,r.updated]));
     applyFilters(); updateCount();
-    document.getElementById('importMsg').innerHTML = `<span style="color:#4a7c59">✓ יובאו ${rows.length} בקשות (הדגמה)</span>`;
+    msg.innerHTML = `<span style="color:#4a7c59">✓ יובאו ${rows.length} בקשות (הדגמה)</span>`;
     btn.style.display='none'; return;
   }
 
-  // Send in batches of 5 rows (keeps URL under limit)
-  const BATCH = 5;
+  // POST in batches of 50 rows — no URL length limit
+  const BATCH = 50;
   let done = 0;
   try {
     for (let i = 0; i < rows.length; i += BATCH) {
@@ -505,15 +517,18 @@ async function doImport() {
         [r.id,r.title,r.desc,r.address,r.area,r.contactName,r.phone,r.status,
          r.link,r.responsible,r.volNotes,r.internalNotes,r.sys1,r.sys2,r.created,r.updated]
       );
-      const j = await api({ action:'import', sheet:cfg.sheet||'DATABASE', rows:JSON.stringify(batch) });
+      const j = await api(
+        { action:'import', sheet: cfg.sheet||'DATABASE', rows: batch },
+        true // usePost
+      );
       if (!j.success) throw new Error(j.error||'שגיאה');
       done += batch.length;
     }
-    document.getElementById('importMsg').innerHTML = `<span style="color:#4a7c59">✓ יובאו ${done} בקשות בהצלחה!</span>`;
+    msg.innerHTML = `<span style="color:#4a7c59">✓ יובאו ${done} בקשות בהצלחה! 🎉</span>`;
     btn.style.display = 'none';
     loadData();
   } catch(e) {
-    document.getElementById('importMsg').innerHTML = `<span style="color:#b83232">✗ ${e.message}</span>`;
+    msg.innerHTML = `<span style="color:#b83232">✗ ${e.message}</span>`;
     btn.disabled=false; btn.textContent='נסה שוב';
   }
 }
