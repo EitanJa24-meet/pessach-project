@@ -451,7 +451,9 @@ function renderTable() {
     return;
   }
   tbody.innerHTML = filteredRows.map((row, i) => {
-    const ph = String(row[C.phone] || '');
+    let ph = String(row[C.phone] || '');
+    if (ph && /^[1-9]/.test(ph)) ph = '0' + ph; // Add leading zero if missing
+    
     const link = String(row[C.link] || '');
     const np = normPhone(ph);
     const addr = encodeURIComponent(String(row[C.address] || ''));
@@ -587,12 +589,15 @@ function openModal(idx) {
   if (!row) return;
   currentRow = { row, idx };
 
+  let ph = String(row[C.phone] || '');
+  if (ph && /^[1-9]/.test(ph)) ph = '0' + ph;
+  
   setText('modalTitle', row[C.title]);
   setText('d-desc', row[C.desc]);
   setText('d-address', row[C.address]);
   setText('d-area', row[C.area]);
   setText('d-name', row[C.name]);
-  setText('d-phone', row[C.phone]);
+  setText('d-phone', ph);
   setText('d-created', row[C.created]);
   setText('d-vol-notes', row[C.volNotes]);
 
@@ -866,7 +871,13 @@ async function geocode(address) {
 }
 
 // ---- CONFIG ----
-function openConfig() { document.getElementById('cfg-url').value = cfg.url || ''; document.getElementById('cfg-sheet').value = cfg.sheet || 'DATABASE'; document.getElementById('configOverlay').classList.remove('hidden'); }
+function openConfig() {
+  const pin = prompt('הכנס סיסמה לניהול הגדרות:');
+  if (pin !== '2024') { if (pin !== null) showToast('סיסמה שגויה'); return; }
+  document.getElementById('cfg-url').value = cfg.url || '';
+  document.getElementById('cfg-sheet').value = cfg.sheet || 'DATABASE';
+  document.getElementById('configOverlay').classList.remove('hidden');
+}
 function closeConfig() { document.getElementById('configOverlay').classList.add('hidden'); }
 function saveConfig() {
   cfg.url = document.getElementById('cfg-url').value.trim(); cfg.sheet = document.getElementById('cfg-sheet').value.trim() || 'DATABASE';
