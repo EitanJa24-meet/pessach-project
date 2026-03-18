@@ -10,9 +10,9 @@
   --text:      #2c2820;
   --text2:     #5a5248;
   --text3:     #8a8278;
-  --green:     #3d6b4a; /* Nice Green */
-  --green-bg:  #f0f7f2;
-  --green-lt:  #d9e9de;
+  --green:     #5a8f6a; /* Softer Green */
+  --green-bg:  #f2f8f4;
+  --green-lt:  #e0ede4;
   --orange:    #e67e22; /* Warm Orange */
   --orange-bg: #fef5ed;
   --orange-lt: #fbe5d1;
@@ -105,6 +105,7 @@ html, body {
   padding: 0 20px 20px 20px; 
   background: var(--bg);
   height: calc(100vh - var(--topbar-h) - var(--filter-h)); 
+  position: relative;
 }
 .requests-table { 
   width: max-content;
@@ -116,7 +117,7 @@ html, body {
   table-layout: fixed;
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
+  /* overflow: hidden; Removed to keep sticky header working properly */
   box-shadow: var(--shadow);
 }
 
@@ -128,12 +129,12 @@ html, body {
   text-transform: uppercase;
   letter-spacing: .5px;
   color: #fff !important;
-  border-bottom: 2px solid var(--green);
+  border-bottom: 2px solid rgba(0,0,0,0.1);
   background: var(--green) !important;
   white-space: nowrap;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 110;
   user-select: none;
 }
 .requests-table th:not(:last-child) {
@@ -173,10 +174,19 @@ html, body {
   vertical-align: middle; 
   border-left: 1px solid var(--border); 
   border-bottom: 1px solid var(--border);
-  overflow: hidden; 
+  overflow: hidden;
+  height: 50px;
 }
 
-.cell-text { padding:10px 12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; cursor: help; }
+.cell-text { 
+  padding: 10px 12px; 
+  display: block; 
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  width: 100%; /* Use width 100% to fill the fixed cell */
+  cursor: help; 
+}
 .requests-table.resizing { cursor: col-resize; }
 .requests-table.resizing * { cursor: col-resize !important; }
 
