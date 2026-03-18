@@ -1,25 +1,25 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:        #f5f0e8;
-  --bg2:       #ede8de;
-  --bg3:       #e4dfd4;
-  --card:      #faf7f2;
-  --border:    #d6cfc2;
-  --border2:   #bfb8aa;
+  --bg:        #fdfaf5; /* Cream */
+  --bg2:       #f5eedc; /* Darker Cream */
+  --bg3:       #ede4d3;
+  --card:      #ffffff;
+  --border:    #e0ddd5;
+  --border2:   #d1ccc0;
   --text:      #2c2820;
   --text2:     #5a5248;
   --text3:     #8a8278;
-  --green:     #4a7c59;
-  --green-bg:  #e8f2eb;
-  --green-lt:  #c8e6d0;
-  --orange:    #c4621a;
-  --orange-bg: #fdf0e6;
-  --orange-lt: #f5d5b8;
-  --blue:      #2563a8;
-  --blue-bg:   #e8f0fb;
-  --red:       #b83232;
-  --red-bg:    #fdeaea;
+  --green:     #3d6b4a; /* Nice Green */
+  --green-bg:  #f0f7f2;
+  --green-lt:  #d9e9de;
+  --orange:    #e67e22; /* Warm Orange */
+  --orange-bg: #fef5ed;
+  --orange-lt: #fbe5d1;
+  --blue:      #3498db;
+  --blue-bg:   #ebf5fb;
+  --red:       #e74c3c;
+  --red-bg:    #fdedec;
   --grey:      #7a7468;
   --grey-bg:   #eeebe5;
   --topbar-h:  54px;
@@ -99,36 +99,27 @@ html, body {
 /* ── VIEWS ── */
 .view-container { margin-top:calc(var(--topbar-h) + var(--filter-h)); min-height:calc(100vh - var(--topbar-h) - var(--filter-h)); background:#f5f0e8; }
 .hidden { display:none !important; }
-
 /* ── TABLE ── */
 .table-wrapper { 
-  overflow: auto; /* Enable both x and y scroll */
+  overflow: auto; 
   padding: 0 20px 20px 20px; 
-  background: #f8f9fa;
-  height: calc(100vh - var(--topbar-h) - var(--filter-h)); /* Fix height for sticky header */
+  background: var(--bg);
+  height: calc(100vh - var(--topbar-h) - var(--filter-h)); 
 }
 .requests-table { 
   width: max-content;
   min-width: 100%;
-  border-collapse: separate; /* Required for better border handle with sticky */
+  border-collapse: separate; 
   border-spacing: 0;
   font-size: 15px; 
   background: #fff;
   table-layout: fixed;
-  border: 1px solid #e9ecef;
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
-/* Fixed column widths to ensure horizontal scroll works correctly */
-.requests-table th:nth-child(1) { width: 180px; } /* כותרת */
-.requests-table th:nth-child(2) { width: 280px; } /* תיאור */
-.requests-table th:nth-child(3) { width: 220px; } /* כתובת */
-.requests-table th:nth-child(4) { width: 130px; } /* אזור */
-.requests-table th:nth-child(5) { width: 130px; } /* שם מבקש */
-.requests-table th:nth-child(6) { width: 130px; } /* טלפון */
-.requests-table th.col-status { width: 160px; }
-.requests-table th.col-responsible { width: 170px; }
-.requests-table th:last-child { width: 110px; }   /* פעולות */
 .requests-table thead th {
   padding: 16px 14px;
   text-align: right;
@@ -136,9 +127,9 @@ html, body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .5px;
-  color: #495057 !important;
-  border-bottom: 2px solid #dee2e6;
-  background: #f1f3f5 !important;
+  color: #fff !important;
+  border-bottom: 2px solid var(--green);
+  background: var(--green) !important;
   white-space: nowrap;
   position: sticky;
   top: 0;
@@ -146,7 +137,7 @@ html, body {
   user-select: none;
 }
 .requests-table th:not(:last-child) {
-  border-left: 1px solid #dee2e6;
+  border-left: 1px solid rgba(255,255,255,0.15);
 }
 .requests-table th { position: relative; }
 .resizer {
@@ -160,20 +151,29 @@ html, body {
   z-index: 101;
 }
 .resizer:hover, .resizing .resizer { 
-  background: var(--blue);
-  opacity: 0.2;
+  background: var(--orange);
+  opacity: 0.4;
 }
 
+/* Base widths - allowed to be squashed */
+.requests-table th:nth-child(1) { width: 180px; }
+.requests-table th:nth-child(2) { width: 280px; }
+.requests-table th:nth-child(3) { width: 220px; }
+.requests-table th:nth-child(4) { width: 130px; }
+.requests-table th:nth-child(5) { width: 130px; }
+.requests-table th:nth-child(6) { width: 130px; }
 .col-status { width: 160px; }
 .col-responsible { width: 170px; }
+.requests-table th:last-child { width: 110px; }
 
-.requests-table tbody tr { border-bottom: 1px solid #d6cfc2; transition: background .1s; }
+.requests-table tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
 .requests-table tbody tr:hover { background: var(--green-bg) !important; }
-.requests-table tbody td {
-  padding: 0;
-  vertical-align: middle;
-  border-left: 1px solid #e0ddd5;
-  overflow: hidden;
+.requests-table tbody td { 
+  padding: 0; 
+  vertical-align: middle; 
+  border-left: 1px solid var(--border); 
+  border-bottom: 1px solid var(--border);
+  overflow: hidden; 
 }
 
 .cell-text { padding:10px 12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; cursor: help; }
