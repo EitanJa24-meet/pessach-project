@@ -508,7 +508,7 @@ function initResizers() {
 
       const onMouseMove = e => {
         const width = startWidth + (startX - e.pageX);
-        if (width > 50) th.style.width = width + 'px';
+        if (width > 10) th.style.width = width + 'px';
       };
       const onMouseUp = () => {
         table.classList.remove('resizing');

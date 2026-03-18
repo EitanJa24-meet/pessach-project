@@ -121,24 +121,30 @@ html, body {
   box-shadow: var(--shadow);
 }
 
+.requests-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+}
 .requests-table thead th {
   padding: 16px 14px;
   text-align: right;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .5px;
-  color: #fff !important;
-  border-bottom: 2px solid rgba(0,0,0,0.1);
-  background: var(--green) !important;
+  color: var(--text) !important;
+  border-bottom: 2px solid var(--orange);
+  background: var(--bg2) !important; /* Cream Color */
   white-space: nowrap;
   position: sticky;
   top: 0;
-  z-index: 110;
+  z-index: 121;
   user-select: none;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 .requests-table th:not(:last-child) {
-  border-left: 1px solid rgba(255,255,255,0.15);
+  border-left: 1px solid var(--border);
 }
 .requests-table th { position: relative; }
 .resizer {
@@ -184,7 +190,8 @@ html, body {
   white-space: nowrap; 
   overflow: hidden; 
   text-overflow: ellipsis; 
-  width: 100%; /* Use width 100% to fill the fixed cell */
+  width: 100%;
+  min-width: 0; /* Allow shrinking below content width */
   cursor: help; 
 }
 .requests-table.resizing { cursor: col-resize; }
