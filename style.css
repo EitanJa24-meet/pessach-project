@@ -26,16 +26,17 @@
   --filter-h:  50px;
   --radius:    10px;
   --rsm:       6px;
-  --shadow:    0 2px 8px rgba(44,40,32,.10);
-  --shadow-lg: 0 8px 32px rgba(44,40,32,.18);
-  font-family: 'Heebo', sans-serif;
+  --shadow:    0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.15);
+  font-family: 'Outfit', 'Heebo', sans-serif;
 }
 
 html, body {
   direction: rtl;
-  background: #f5f0e8 !important;
-  color: #2c2820;
+  background: #f8f9fa !important;
+  color: #1a1a1a;
   min-height: 100vh;
+  font-size: 16px; /* Slightly bigger default */
 }
 
 /* ── TOPBAR ── */
@@ -100,14 +101,22 @@ html, body {
 .hidden { display:none !important; }
 
 /* ── TABLE ── */
-.table-wrapper { overflow-x:auto; padding:16px 20px; background:#f5f0e8; }
-.requests-table {
+.table-wrapper { 
+  overflow: auto; /* Enable both x and y scroll */
+  padding: 0 20px 20px 20px; 
+  background: #f8f9fa;
+  height: calc(100vh - var(--topbar-h) - var(--filter-h)); /* Fix height for sticky header */
+}
+.requests-table { 
   width: max-content;
   min-width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  background: #f5f0e8;
+  border-collapse: separate; /* Required for better border handle with sticky */
+  border-spacing: 0;
+  font-size: 15px; 
+  background: #fff;
   table-layout: fixed;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
 }
 
 /* Fixed column widths to ensure horizontal scroll works correctly */
@@ -121,21 +130,23 @@ html, body {
 .requests-table th.col-responsible { width: 170px; }
 .requests-table th:last-child { width: 110px; }   /* פעולות */
 .requests-table thead th {
-  padding: 12px 14px;
+  padding: 16px 14px;
   text-align: right;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .6px;
-  color: #fff !important;
-  border-bottom: 2px solid var(--green);
-  background: var(--green) !important;
+  letter-spacing: .5px;
+  color: #495057 !important;
+  border-bottom: 2px solid #dee2e6;
+  background: #f1f3f5 !important;
   white-space: nowrap;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 100;
   user-select: none;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.requests-table th:not(:last-child) {
+  border-left: 1px solid #dee2e6;
 }
 .requests-table th { position: relative; }
 .resizer {
@@ -143,13 +154,14 @@ html, body {
   left: 0;
   top: 0;
   height: 100%;
-  width: 8px;
+  width: 10px;
   background: transparent;
   cursor: col-resize;
-  z-index: 20;
+  z-index: 101;
 }
-.resizer:hover, .resizing .resizer {
-  background: rgba(255, 255, 255, 0.3);
+.resizer:hover, .resizing .resizer { 
+  background: var(--blue);
+  opacity: 0.2;
 }
 
 .col-status { width: 160px; }

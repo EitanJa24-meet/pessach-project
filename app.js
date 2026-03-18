@@ -453,7 +453,7 @@ function renderTable() {
   tbody.innerHTML = filteredRows.map((row, i) => {
     let ph = String(row[C.phone] || '');
     if (ph && /^[1-9]/.test(ph)) ph = '0' + ph; // Add leading zero if missing
-    
+
     const link = String(row[C.link] || '');
     const np = normPhone(ph);
     const addr = encodeURIComponent(String(row[C.address] || ''));
@@ -499,15 +499,15 @@ function initResizers() {
     const resizer = document.createElement('div');
     resizer.classList.add('resizer');
     th.appendChild(resizer);
-    
+
     let startX, startWidth;
     resizer.addEventListener('mousedown', e => {
       startX = e.pageX;
       startWidth = th.offsetWidth;
       table.classList.add('resizing');
-      
+
       const onMouseMove = e => {
-        const width = startWidth + (startX - e.pageX); 
+        const width = startWidth + (startX - e.pageX);
         if (width > 50) th.style.width = width + 'px';
       };
       const onMouseUp = () => {
@@ -548,7 +548,7 @@ function initTooltips() {
       const finalX = (x + w > window.innerWidth) ? e.clientX - w - 10 : x;
       const finalY = (y + h > window.innerHeight) ? e.clientY - h - 10 : y;
       tipEl.style.left = finalX + 'px';
-      tipEl.style.top  = finalY + 'px';
+      tipEl.style.top = finalY + 'px';
     });
     cell.addEventListener('mouseleave', () => {
       tipEl.classList.remove('show');
@@ -591,7 +591,7 @@ function openModal(idx) {
 
   let ph = String(row[C.phone] || '');
   if (ph && /^[1-9]/.test(ph)) ph = '0' + ph;
-  
+
   setText('modalTitle', row[C.title]);
   setText('d-desc', row[C.desc]);
   setText('d-address', row[C.address]);
@@ -873,7 +873,7 @@ async function geocode(address) {
 // ---- CONFIG ----
 function openConfig() {
   const pin = prompt('הכנס סיסמה לניהול הגדרות:');
-  if (pin !== '2024') { if (pin !== null) showToast('סיסמה שגויה'); return; }
+  if (pin !== '2026') { if (pin !== null) showToast('סיסמה שגויה'); return; }
   document.getElementById('cfg-url').value = cfg.url || '';
   document.getElementById('cfg-sheet').value = cfg.sheet || 'DATABASE';
   document.getElementById('configOverlay').classList.remove('hidden');
