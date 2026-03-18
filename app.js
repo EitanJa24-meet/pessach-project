@@ -796,13 +796,13 @@ async function doImport() {
   if (!rows || !rows.length) return;
   const btn = document.getElementById('doImportBtn');
   const msg = document.getElementById('importMsg');
-  btn.disabled = true;
+  if (btn) btn.disabled = true;
 
   if (!LIVE) {
     rows.forEach(r => allRows.push([r.id, r.title, r.desc, r.address, r.area, r.contactName, r.phone, r.status, r.link, r.responsible, r.volNotes, r.internalNotes, r.sys1, r.sys2, r.created, r.updated]));
     applyFilters(); updateCount();
-    msg.innerHTML = `<span style="color:#4a7c59">✓ יובאו ${rows.length} בקשות (הדגמה)</span>`;
-    btn.style.display = 'none'; return;
+    if (msg) msg.innerHTML = `<span style="color:#4a7c59">✓ יובאו ${rows.length} בקשות (הדגמה)</span>`;
+    if (btn) btn.style.display = 'none'; return;
   }
 
   // POST in batches of 50 rows — no URL length limit
@@ -861,43 +861,55 @@ async function renderPins() {
   if (!mapObj) return;
   mapMarkers.forEach(m => m.remove()); mapMarkers = [];
   
-  // Parallelize geocoding with a limit or just batch it
-  const validRows = filteredRows.filter(r => r[C.address]);
+  const validRows = filteredRows.filter(r => r[C.address]).slice(0, 150);
+  console.log('Rendering', validRows.length, 'pins...');
   
-  await Promise.all(validRows.slice(0, 100).map(async (row) => {
+  // Sequential with small sleep to avoid 429
+  for (const row of validRows) {
     try {
       const g = await geocode(row[C.address]);
-      if (!g) return;
-      const color = STATUS_COLOR[row[C.status]] || '#7a7468';
-      const icon = L.divIcon({
+      if (!g) continue;
+      
+      const st = (row[C.status] || '').trim();
+      const color = STATUS_COLOR[st] || '#7a7468';
+      
+      const dot = L.divIcon({
         className: '',
         html: `<div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>`,
         iconSize: [14, 14], iconAnchor: [7, 7]
       });
-      const m = L.marker([g.lat, g.lon], { icon }).addTo(mapObj);
+      
+      const m = L.marker([g.lat, g.lon], { icon: dot }).addTo(mapObj);
       const ri = filteredRows.indexOf(row);
-      m.on('click', () => openModal(ri));
+      m.bindPopup(`<strong>${esc(row[C.title])}</strong><br>${esc(row[C.address])}<br><button onclick="openModal(${ri})" style="margin-top:6px;padding:4px 8px;font-family:inherit;font-size:12px;cursor:pointer">לפרטים ועריכה</button>`);
       mapMarkers.push(m);
-    } catch (e) { console.warn('map err:', e); }
-  }));
+    } catch (e) { console.error('Marker failed:', e); }
+  }
 }
-const GC_KEY = 'vdash_gccache';
+const GC_KEY = 'vdash_gccache_v2';
 const gcCache = JSON.parse(localStorage.getItem(GC_KEY) || '{}');
 
 async function geocode(address) {
-  if (gcCache[address]) return gcCache[address];
+  if (!address) return null;
+  const k = address.trim().toLowerCase();
+  if (gcCache[k]) return gcCache[k];
+  
   try {
-    // Add a randomized small delay to help with rate limiting
-    await sleep(Math.random() * 800);
+    // Sequential delay
+    await sleep(1050); 
     const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ', Israel')}&format=json&limit=1`);
-    if (r.status === 429) { await sleep(1500); return geocode(address); } // Retry once on 429
+    if (r.status === 429) { 
+      console.warn('Geocoding rate limit hit, waiting longer...');
+      await sleep(2500); return geocode(address); 
+    }
     const d = await r.json();
     if (d && d[0]) {
-      gcCache[address] = { lat: +d[0].lat, lon: +d[0].lon };
+      const res = { lat: +d[0].lat, lon: +d[0].lon };
+      gcCache[k] = res;
       localStorage.setItem(GC_KEY, JSON.stringify(gcCache));
-      return gcCache[address];
+      return res;
     }
-  } catch (e) { console.error('Geocode error:', e); }
+  } catch (e) { console.error('Geocode network error:', e); }
   return null;
 }
 
