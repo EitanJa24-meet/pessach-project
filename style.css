@@ -102,23 +102,24 @@ html, body {
 /* ── TABLE ── */
 .table-wrapper { overflow-x:auto; padding:16px 20px; background:#f5f0e8; }
 .requests-table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 14px;
   background: #f5f0e8;
-  table-layout: fixed; /* Essential for alignment and performance */
+  table-layout: fixed;
 }
 
-/* Specific column widths for better alignment */
-.requests-table th:nth-child(1) { width: 15%; } /* כותרת */
-.requests-table th:nth-child(2) { width: 20%; } /* תיאור */
-.requests-table th:nth-child(3) { width: 15%; } /* כתובת */
-.requests-table th:nth-child(4) { width: 10%; } /* אזור */
-.requests-table th:nth-child(5) { width: 10%; } /* שם מבקש */
-.requests-table th:nth-child(6) { width: 10%; } /* טלפון */
-.requests-table th.col-status { width: 130px; }
-.requests-table th.col-responsible { width: 130px; }
-.requests-table th:last-child { width: 100px; }   /* פעולות */
+/* Fixed column widths to ensure horizontal scroll works correctly */
+.requests-table th:nth-child(1) { width: 180px; } /* כותרת */
+.requests-table th:nth-child(2) { width: 280px; } /* תיאור */
+.requests-table th:nth-child(3) { width: 220px; } /* כתובת */
+.requests-table th:nth-child(4) { width: 130px; } /* אזור */
+.requests-table th:nth-child(5) { width: 130px; } /* שם מבקש */
+.requests-table th:nth-child(6) { width: 130px; } /* טלפון */
+.requests-table th.col-status { width: 160px; }
+.requests-table th.col-responsible { width: 170px; }
+.requests-table th:last-child { width: 110px; }   /* פעולות */
 .requests-table thead th {
   padding:9px 12px; text-align:right; font-size:11px; font-weight:700;
   text-transform:uppercase; letter-spacing:.4px; color:var(--green) !important;
