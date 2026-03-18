@@ -329,8 +329,6 @@ html, body {
   .modal-grid { flex-direction:column; }
   .modal-right { flex:none; }
   .topbar-center { display:none; }
-  .requests-table thead th:nth-child(3), .requests-table tbody td:nth-child(3),
-  .requests-table thead th:nth-child(4), .requests-table tbody td:nth-child(4) { display:none; }
 }
 
 /* ── STATUS COLOR ON INLINE SELECT ── */

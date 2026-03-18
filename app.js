@@ -838,36 +838,67 @@ function setView(v) {
   document.getElementById('mapView').classList.toggle('hidden', v !== 'map');
   document.getElementById('btnTable').classList.toggle('active', v === 'table');
   document.getElementById('btnMap').classList.toggle('active', v === 'map');
-  if (v === 'map') initMap();
+  if (v === 'map') {
+    initMap();
+    setTimeout(() => { if (mapObj) mapObj.invalidateSize(); }, 150);
+  }
 }
 function initMap() {
   const go = () => {
-    if (!mapObj) { mapObj = L.map('map', { center: [31.8, 35.0], zoom: 8 }); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapObj); }
+    if (!mapObj) {
+      mapObj = L.map('map', { center: [32.0, 34.8], zoom: 9 });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(mapObj);
+    }
     renderPins();
   };
-  if (typeof L !== 'undefined') { go(); return; }
+  if (window.L) { go(); return; }
   const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(css);
   const s = document.createElement('script'); s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; s.onload = go; document.head.appendChild(s);
 }
 async function renderPins() {
   if (!mapObj) return;
   mapMarkers.forEach(m => m.remove()); mapMarkers = [];
-  for (const row of filteredRows) {
-    if (!row[C.address]) continue;
+  
+  // Parallelize geocoding with a limit or just batch it
+  const validRows = filteredRows.filter(r => r[C.address]);
+  
+  await Promise.all(validRows.slice(0, 100).map(async (row) => {
     try {
-      const g = await geocode(row[C.address]); if (!g) continue;
+      const g = await geocode(row[C.address]);
+      if (!g) return;
       const color = STATUS_COLOR[row[C.status]] || '#7a7468';
-      const icon = L.divIcon({ className: '', html: `<div style="width:13px;height:13px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,.3)"></div>`, iconSize: [13, 13], iconAnchor: [6, 6] });
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>`,
+        iconSize: [14, 14], iconAnchor: [7, 7]
+      });
       const m = L.marker([g.lat, g.lon], { icon }).addTo(mapObj);
-      const ri = filteredRows.indexOf(row); m.on('click', () => openModal(ri)); mapMarkers.push(m);
-    } catch (e) { }
-  }
+      const ri = filteredRows.indexOf(row);
+      m.on('click', () => openModal(ri));
+      mapMarkers.push(m);
+    } catch (e) { console.warn('map err:', e); }
+  }));
 }
-const gcCache = {};
+const GC_KEY = 'vdash_gccache';
+const gcCache = JSON.parse(localStorage.getItem(GC_KEY) || '{}');
+
 async function geocode(address) {
   if (gcCache[address]) return gcCache[address];
-  const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ', Israel')}&format=json&limit=1`);
-  const d = await r.json(); if (d && d[0]) { gcCache[address] = { lat: +d[0].lat, lon: +d[0].lon }; return gcCache[address]; } return null;
+  try {
+    // Add a randomized small delay to help with rate limiting
+    await sleep(Math.random() * 800);
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ', Israel')}&format=json&limit=1`);
+    if (r.status === 429) { await sleep(1500); return geocode(address); } // Retry once on 429
+    const d = await r.json();
+    if (d && d[0]) {
+      gcCache[address] = { lat: +d[0].lat, lon: +d[0].lon };
+      localStorage.setItem(GC_KEY, JSON.stringify(gcCache));
+      return gcCache[address];
+    }
+  } catch (e) { console.error('Geocode error:', e); }
+  return null;
 }
 
 // ---- CONFIG ----
