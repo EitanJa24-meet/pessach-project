@@ -121,25 +121,48 @@ html, body {
 .requests-table th.col-responsible { width: 170px; }
 .requests-table th:last-child { width: 110px; }   /* פעולות */
 .requests-table thead th {
-  padding:9px 12px; text-align:right; font-size:11px; font-weight:700;
-  text-transform:uppercase; letter-spacing:.4px; color:var(--green) !important;
-  border-bottom:2px solid var(--green-lt) !important; background:var(--green-bg) !important; white-space:nowrap;
-  position:sticky; top:0; z-index:5;
+  padding: 12px 14px;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: #fff !important;
+  border-bottom: 2px solid var(--green);
+  background: var(--green) !important;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   user-select: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 .requests-table th { position: relative; }
 .resizer {
-  position: absolute; left: 0; top: 0; height: 100%; width: 6px;
-  background: transparent; cursor: col-resize; z-index: 10;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 8px;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 20;
 }
-.resizer:hover, .resizing .resizer { background: rgba(74, 124, 89, 0.4); }
+.resizer:hover, .resizing .resizer {
+  background: rgba(255, 255, 255, 0.3);
+}
 
-.col-status { width: 130px; }
-.col-responsible { width: 130px; }
+.col-status { width: 160px; }
+.col-responsible { width: 170px; }
 
-.requests-table tbody tr { border-bottom:1px solid #d6cfc2; transition:background .1s; }
+.requests-table tbody tr { border-bottom: 1px solid #d6cfc2; transition: background .1s; }
 .requests-table tbody tr:hover { background: var(--green-bg) !important; }
-.requests-table tbody td { padding:0; vertical-align:middle; border-left: 1px solid transparent; overflow: hidden; }
+.requests-table tbody td {
+  padding: 0;
+  vertical-align: middle;
+  border-left: 1px solid #e0ddd5;
+  overflow: hidden;
+}
 
 .cell-text { padding:10px 12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; cursor: help; }
 .requests-table.resizing { cursor: col-resize; }
