@@ -568,9 +568,20 @@ async function inlineSave(idx, field, value) {
 
   if (!LIVE) { flashRow(idx); return; }
 
-  const rowIndex = allRows.indexOf(row) + 2;
+  // More robust way to find the spreadsheet row
+  let rowIndex = allRows.indexOf(row);
+  if (rowIndex === -1 && row[C.id]) {
+    rowIndex = allRows.findIndex(r => String(r[C.id]) === String(row[C.id]));
+  }
+  
+  if (rowIndex === -1) {
+    showToast('שגיאת סנכרון — אנא רענן את הדף');
+    return;
+  }
+  
+  const finalRow = rowIndex + 2;
   try {
-    const params = { action: 'update', sheet: cfg.sheet || 'DATABASE', row: rowIndex, t: new Date().toLocaleString('he-IL') };
+    const params = { action: 'update', sheet: cfg.sheet || 'DATABASE', row: finalRow, t: new Date().toLocaleString('he-IL') };
     if (field === 'status') params.s = value;
     if (field === 'responsible') params.r = value;
     const j = await api(params);
@@ -652,11 +663,23 @@ async function saveChanges() {
   }
 
   try {
-    const rowIndex = allRows.indexOf(row) + 2;
+    let rowIndex = allRows.indexOf(row);
+    if (rowIndex === -1 && row[C.id]) {
+      rowIndex = allRows.findIndex(r => String(r[C.id]) === String(row[C.id]));
+    }
+    
+    if (rowIndex === -1) throw new Error('שגיאת סנכרון — רענן דף');
+    
+    const finalRow = rowIndex + 2;
     const t = new Date().toLocaleString('he-IL');
-    const j = await api({ action: 'update', sheet: cfg.sheet || 'DATABASE', row: rowIndex, s: ns, r: nr, i: nn, t });
+    const j = await api({ action: 'update', sheet: cfg.sheet || 'DATABASE', row: finalRow, s: ns, r: nr, i: nn, t });
     if (j.success) {
       row[C.status] = ns; row[C.responsible] = nr; row[C.internalNotes] = nn; row[C.updated] = t;
+      // If we found the row by ID but the object was different, update the one in allRows too
+      const mainRow = allRows[rowIndex];
+      if (mainRow !== row) {
+         mainRow[C.status] = ns; mainRow[C.responsible] = nr; mainRow[C.internalNotes] = nn; mainRow[C.updated] = t;
+      }
       document.getElementById('modalStatusBadge').className = 'badge ' + (STATUS_BADGE[ns] || 'badge-none');
       document.getElementById('modalStatusBadge').textContent = ns || 'ללא סטטוס';
       renderTable(); flashRow(idx);
